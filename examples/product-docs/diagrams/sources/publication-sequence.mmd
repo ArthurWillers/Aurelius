@@ -1,0 +1,18 @@
+sequenceDiagram
+  actor Author
+  participant Aurelius
+  participant Validator
+  participant Publisher
+  Author->>Aurelius: Submit Markdown and Mermaid
+  activate Aurelius
+  Aurelius->>Validator: Check content and diagram contracts
+  alt Contracts are valid
+    Validator-->>Aurelius: Validation passed
+    Aurelius->>Publisher: Build static projections
+    Publisher-->>Author: Publish human and agent views
+  else Contract violation
+    Validator-->>Aurelius: Return actionable error
+    Aurelius-->>Author: Point to the invalid source
+  end
+  deactivate Aurelius
+

@@ -1,0 +1,19 @@
+{
+  "id": "editorial-state",
+  "kind": "state",
+  "title": "Editorial document states",
+  "description": "A state machine showing the document lifecycle from draft through review, validation, and publication.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/editorial-state.mmd"
+  },
+  "summary": "A draft enters review, returns for changes when necessary, and can only reach publication after its contracts are validated.",
+  "presentation": { "width": 1200, "height": 420 },
+  "data": {
+    "focus": "Published",
+    "states": ["draft", "review", "validated", "published"],
+    "terminal": "published"
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}
+

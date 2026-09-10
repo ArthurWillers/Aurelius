@@ -1,0 +1,30 @@
+erDiagram
+  DOCUMENT 1 -- N SECTION : contains
+  DOCUMENT 1 -- N VISUAL : embeds
+  VISUAL 1 -- 1 DECLARATIVE_SOURCE : renders_from
+  DOCUMENT 1 -- N SOURCE_REF : cites
+  DOCUMENT {
+    string id PK
+    string title
+    string status
+  }
+  SECTION {
+    string id PK
+    string document_id FK
+    string heading
+  }
+  VISUAL {
+    string id PK
+    string document_id FK
+    string kind
+  }
+  DECLARATIVE_SOURCE {
+    string visual_id PK,FK
+    string language
+    string path
+  }
+  SOURCE_REF {
+    string id PK
+    string document_id FK
+    string location
+  }

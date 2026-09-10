@@ -1,0 +1,18 @@
+{
+  "id": "visual-model-classes",
+  "kind": "uml-class",
+  "title": "Declarative visual class model",
+  "description": "A UML class model for declarative sources, diagram envelopes, and their agent-readable projections.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/visual-model-classes.mmd"
+  },
+  "summary": "MermaidSource implements the VisualSource contract. A DiagramEnvelope owns one visual source and produces an AgentProjection that exposes the render mode and structured data.",
+  "presentation": { "width": 1200, "height": 440 },
+  "data": {
+    "focus": "MermaidSource",
+    "classes": ["VisualSource", "MermaidSource", "DiagramEnvelope", "AgentProjection"],
+    "relationships": ["realization", "composition", "association"]
+  },
+  "sourceRefs": ["content/declarative-visuals.md", "../../core/projections.mjs"]
+}

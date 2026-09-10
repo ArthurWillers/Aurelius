@@ -1,0 +1,18 @@
+# Dependencies and package-manager diagnostics
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Generated documentation, coverage, and packaged artifacts
+dist/
+coverage/
+.nyc_output/
+*.tgz
+
+# Local operating-system and editor state
+.DS_Store
+.idea/
+*.swp
+*.swo

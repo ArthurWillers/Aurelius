@@ -1,0 +1,17 @@
+{
+  "id": "documentation-data-model",
+  "kind": "er",
+  "title": "Documentation data model",
+  "description": "An ER model linking documents, sections, visuals, declarative sources, and implementation references.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/documentation-data-model.mmd"
+  },
+  "summary": "A document contains sections, embeds visuals, and cites source references. Each visual renders from one declarative source identified by its language and path.",
+  "presentation": { "width": 1200, "height": 520 },
+  "data": {
+    "entities": ["document", "section", "visual", "declarative_source", "source_ref"],
+    "aggregateRoot": "document"
+  },
+  "sourceRefs": ["content/declarative-visuals.md", "../../core/schemas.mjs"]
+}

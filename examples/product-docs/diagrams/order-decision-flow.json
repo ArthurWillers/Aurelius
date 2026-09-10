@@ -1,0 +1,18 @@
+{
+  "id": "order-decision-flow",
+  "kind": "flowchart",
+  "title": "Order decision flow",
+  "description": "An order branches on inventory and payment approval before confirmation or a recoverable retry.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/order-decision-flow.mmd"
+  },
+  "summary": "Orders without stock stop immediately. Available orders request payment; approved payments confirm the order, while declined payments loop through another payment method.",
+  "presentation": { "width": 1200, "height": 440 },
+  "data": {
+    "decisions": ["stock available", "payment approved"],
+    "terminalOutcomes": ["unavailable item", "confirmed order"],
+    "retry": "another payment method"
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}

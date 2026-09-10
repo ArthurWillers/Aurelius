@@ -1,0 +1,34 @@
+{
+  "id": "documentation-map",
+  "kind": "architecture",
+  "title": "Aurelius publishing architecture",
+  "description": "Three zones show how versioned Markdown, diagrams, and metadata pass through renderers and indexes to become a site, accessible SVG, and structured agent interfaces.",
+  "zones": [
+    { "label": "VERSIONED SOURCE", "x": 40, "y": 48, "width": 400, "height": 616 },
+    { "label": "BUILD AND PROJECTION", "x": 560, "y": 48, "width": 400, "height": 616 },
+    { "label": "PUBLISHED READING", "x": 1080, "y": 48, "width": 600, "height": 616 }
+  ],
+  "nodes": [
+    { "id": "markdown-source", "kind": "input", "tag": "CONTENT", "label": "Markdown", "detail": "pages and decisions", "x": 88, "y": 120, "width": 256, "height": 112 },
+    { "id": "diagram-source", "kind": "input", "tag": "DIAGRAMS", "label": "Semantic JSON", "detail": "zones and relationships", "x": 88, "y": 304, "width": 256, "height": 112 },
+    { "id": "metadata-source", "kind": "input", "tag": "METADATA", "label": "Relations and sources", "detail": "IDs and traceability", "x": 88, "y": 488, "width": 256, "height": 112 },
+    { "id": "html-renderer", "kind": "focal", "tag": "HTML", "label": "Editorial renderer", "detail": "accessible structure", "x": 608, "y": 120, "width": 256, "height": 112 },
+    { "id": "svg-renderer", "kind": "backend", "tag": "SVG", "label": "Diagram renderer", "detail": "orthogonal layout", "x": 608, "y": 304, "width": 256, "height": 112 },
+    { "id": "indexer", "kind": "store", "tag": "INDEX", "label": "Index and graph", "detail": "search and relations", "x": 608, "y": 488, "width": 256, "height": 112 },
+    { "id": "website", "kind": "backend", "tag": "SITE", "label": "Human reading", "detail": "static HTML", "x": 1400, "y": 120, "width": 224, "height": 112 },
+    { "id": "svg-output", "kind": "optional", "tag": "SVG", "label": "Accessible diagram", "detail": "copy and print", "x": 1400, "y": 304, "width": 224, "height": 112 },
+    { "id": "agent-api", "kind": "store", "tag": "AGENTS", "label": "API and corpus", "detail": "JSON and llms.txt", "x": 1400, "y": 488, "width": 224, "height": 112 }
+  ],
+  "edges": [
+    { "id": "render-pages", "from": "markdown-source", "to": "html-renderer", "label": "RENDER", "tone": "accent" },
+    { "id": "publish-site", "from": "html-renderer", "to": "website", "label": "PUBLISH" },
+    { "id": "compose-diagram", "from": "diagram-source", "to": "svg-renderer", "label": "COMPOSE" },
+    { "id": "publish-svg", "from": "svg-renderer", "to": "svg-output", "label": "EMBED" },
+    { "id": "index-metadata", "from": "metadata-source", "to": "indexer", "label": "INDEX", "tone": "link" },
+    { "id": "publish-api", "from": "indexer", "to": "agent-api", "label": "EXPOSE", "tone": "link" },
+    { "id": "include-diagrams", "from": "markdown-source", "to": "diagram-source", "label": "INCLUDE" },
+    { "id": "describe-content", "from": "diagram-source", "to": "metadata-source", "label": "DESCRIBE" },
+    { "id": "include-svg", "from": "html-renderer", "to": "svg-renderer", "label": "INCLUDE" },
+    { "id": "index-output", "from": "svg-renderer", "to": "indexer", "label": "DESCRIBE" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "reader-journey",
+  "kind": "journey",
+  "title": "Reader evidence journey",
+  "description": "A user journey from finding a page to verifying its evidence and reusing its structured API projection.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/reader-journey.mmd"
+  },
+  "summary": "Readers discover and understand the document, encounter their main friction while tracing source evidence, and recover when the same facts are reused from the structured API.",
+  "presentation": { "width": 1200, "height": 440 },
+  "data": {
+    "focus": "Follow source references",
+    "stages": ["discover", "understand", "verify"],
+    "actors": ["reader", "agent"]
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}

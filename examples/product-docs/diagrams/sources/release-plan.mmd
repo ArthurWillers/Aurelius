@@ -1,0 +1,13 @@
+gantt
+  title Documentation release plan
+  dateFormat YYYY-MM-DD
+  axisFormat %d %b
+  section Author
+  Draft guide :done, draft, 2026-09-01, 3d
+  Review sources :done, review, after draft, 2d
+  section Verify
+  Validate contracts :active, validate, after review, 2d
+  Accessibility check :a11y, after validate, 1d
+  section Deliver
+  Publish projections :milestone, publish, after a11y, 0d
+

@@ -1,0 +1,19 @@
+{
+  "id": "release-plan",
+  "kind": "gantt",
+  "title": "Documentation release plan",
+  "description": "A compact Gantt chart for authoring, verification, accessibility review, and publication.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/release-plan.mmd"
+  },
+  "summary": "Authoring and source review precede contract validation and accessibility verification, ending at a publication milestone.",
+  "presentation": { "width": 1200, "height": 400 },
+  "data": {
+    "focus": "Validate contracts",
+    "phases": ["author", "verify", "deliver"],
+    "milestone": "publish projections"
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}
+

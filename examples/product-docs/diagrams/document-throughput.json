@@ -1,0 +1,19 @@
+{
+  "id": "document-throughput",
+  "kind": "line",
+  "title": "Document throughput",
+  "description": "A line chart showing an illustrative document count across four publication states.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/document-throughput.mmd"
+  },
+  "summary": "The illustrative corpus grows from six drafts to twenty-two published documents as content passes through review and validation.",
+  "presentation": { "width": 1200, "height": 360 },
+  "data": {
+    "focus": "corpus",
+    "unit": "documents",
+    "series": [{ "name": "corpus", "values": [6, 11, 17, 22] }],
+    "categories": ["Draft", "Review", "Validated", "Published"]
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}
