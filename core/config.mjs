@@ -12,6 +12,7 @@ export function normalizeNavigation(navigation, language = "en") {
   if (Array.isArray(navigation)) return { primary: navigation.slice(0, 5), sections: [{ label: isEnglish(language) ? "Documentation" : "Documentação", items: navigation }] };
   const value = navigation && typeof navigation === "object" ? navigation : {};
   return {
+    labelPrefix: typeof value.labelPrefix === "string" ? value.labelPrefix : "",
     primary: Array.isArray(value.primary) ? value.primary : ["home"],
     sections: Array.isArray(value.sections) ? value.sections : [],
   };
@@ -29,13 +30,13 @@ export function normalizedConfig(config) {
   const normalized = {
     language: "en", siteTitle: "Documentation",
     siteDescription: "Static documentation for people and agents.",
-    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.0" },
+    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.2" },
     navigation: { primary: ["home"], sections: [] }, ...config,
     brand: {
       title: "Documentation", kicker: "knowledge base", name: config.siteTitle || "Documentation",
       logoAlt: "Documentation logo", ...(config.brand || {}),
     },
-    framework: { name: "Aurelius", version: "0.4.0", ...(config.framework || {}) },
+    framework: { name: "Aurelius", version: "0.4.2", ...(config.framework || {}) },
     colors: { ...starterColors, ...(config.colors || {}) },
   };
   normalized.navigation = normalizeNavigation(config.navigation || normalized.navigation, normalized.language);

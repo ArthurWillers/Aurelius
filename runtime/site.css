@@ -176,54 +176,89 @@ a:hover {
 }
 
 .site-sidebar {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   position: sticky;
+  scrollbar-width: thin;
   top: 24px;
 }
 
 .site-sidebar nav,
-.site-sidebar section {
+.site-sidebar .nav-children {
   display: grid;
 }
 
 .site-sidebar nav {
-  gap: 18px;
+  gap: 6px;
 }
 
-.site-sidebar section {
+.site-sidebar .nav-children {
   gap: 5px;
 }
 
 .site-sidebar .nav-folder {
   border-left: 1px solid var(--rule);
-  gap: 3px;
   margin: 3px 0 5px 8px;
   padding-left: 8px;
 }
 
-.site-sidebar .nav-folder h3 {
+.site-sidebar summary {
+  align-items: center;
   color: var(--soft);
+  cursor: pointer;
+  display: flex;
   font-family: var(--mono);
-  font-size: 8px;
   font-weight: 500;
+  justify-content: space-between;
   letter-spacing: 0.11em;
-  margin: 3px 0 2px;
+  list-style: none;
+  min-height: 26px;
+  padding: 3px 6px;
   text-transform: uppercase;
 }
 
-.site-sidebar h2 {
-  color: var(--soft);
-  font-family: var(--mono);
+.site-sidebar summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-sidebar summary::after {
+  color: var(--accent);
+  content: "+";
+  flex: 0 0 auto;
+  font-size: 9px;
+  line-height: 1;
+  margin-left: 8px;
+}
+
+.site-sidebar details[open] > summary::after {
+  content: "−";
+}
+
+.site-sidebar summary:hover,
+.site-sidebar summary:focus-visible {
+  background: var(--accent-tint);
+  color: var(--ink);
+  outline: none;
+}
+
+.site-sidebar .nav-section > summary {
   font-size: 9px;
   letter-spacing: 0.13em;
-  margin: 0 0 4px;
-  text-transform: uppercase;
+}
+
+.site-sidebar .nav-folder > summary {
+  font-size: 8px;
+  margin-bottom: 2px;
 }
 
 .site-sidebar a {
   border-left: 2px solid transparent;
   color: var(--muted);
+  display: block;
   font-size: 13px;
   line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 5px 7px;
   text-decoration: none;
 }
@@ -1548,6 +1583,8 @@ html {
   }
   .site-sidebar {
     border-bottom: 1px solid var(--rule);
+    max-height: none;
+    overflow: visible;
     padding-bottom: 20px;
     position: static;
   }

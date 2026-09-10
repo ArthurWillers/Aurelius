@@ -146,7 +146,9 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.match(html, /Semantic source: `diagrams\/system\.json`/);
   assert.match(html, /@media print[\s\S]*--paper: #fff/);
   assert.match(html, /class="site-sidebar"/);
-  assert.match(html, /class="nav-folder"><h3>Guides<\/h3>/);
+  assert.match(html, /class="nav-section" data-nav-group="section-0" open>/);
+  assert.match(html, /class="nav-folder" data-nav-group="section-0-1"><summary>Guides<\/summary>/);
+  assert.match(html, /aurelius:nav:/);
   assert.match(html, /break-inside: avoid-page !important/);
   assert.match(flowHtml, /class="html-artifact-frame"/);
   assert.match(flowHtml, /sandbox=""/);

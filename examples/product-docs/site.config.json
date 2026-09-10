@@ -3,7 +3,7 @@
   "siteDescription": "Static documentation that reads well for people and stays structured for agents.",
   "language": "en",
   "outputDirectory": "dist",
-  "framework": { "name": "Aurelius", "version": "0.4.0" },
+  "framework": { "name": "Aurelius", "version": "0.4.2" },
   "brand": {
     "title": "Aurelius",
     "kicker": "static documentation",

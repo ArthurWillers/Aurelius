@@ -89,6 +89,18 @@
     if (results && !event.target.closest(".search")) renderResults([]);
   });
 
+  document.querySelectorAll("[data-nav-group]").forEach(function (group) {
+    var key = "aurelius:nav:" + group.dataset.navGroup;
+    var containsCurrent = !!group.querySelector('[aria-current="page"]');
+    try {
+      var saved = window.localStorage.getItem(key);
+      if (saved !== null && !containsCurrent) group.open = saved === "open";
+    } catch (error) {}
+    group.addEventListener("toggle", function () {
+      try { window.localStorage.setItem(key, group.open ? "open" : "closed"); } catch (error) {}
+    });
+  });
+
   function status(message) {
     var target = document.querySelector("[data-action-status]");
     if (!target) return;

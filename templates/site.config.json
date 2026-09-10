@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "framework": {
     "name": "Aurelius",
-    "version": "0.4.0"
+    "version": "0.4.2"
   },
   "brand": {
     "title": "Documentation",

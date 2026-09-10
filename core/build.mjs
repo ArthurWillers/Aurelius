@@ -125,7 +125,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.0" },
+        framework: { name: "Aurelius", version: "0.4.2" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",
@@ -2109,6 +2109,11 @@ function renderAgentCards(fromDocument, config) {
 function renderNavigation(currentDocument, documents, config, logoDataUrl) {
   const copy = messages(config);
   const byId = new Map(documents.map((document) => [document.id, document]));
+  const navigationLabel = (document) => {
+    const title = document.id === "home" ? copy.home : document.title;
+    const prefix = typeof config.navigation?.labelPrefix === "string" ? config.navigation.labelPrefix : "";
+    return prefix && title.startsWith(prefix) ? title.slice(prefix.length).trimStart() : title;
+  };
   const links = config.navigation.primary
     .map((id) => byId.get(id))
     .filter(Boolean)
@@ -2121,9 +2126,7 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
         '"' +
         current +
         ">" +
-        escapeHtml(
-          document.id === "home" ? copy.home : document.title,
-        ) +
+        escapeHtml(navigationLabel(document)) +
         "</a>"
       );
     })
@@ -2153,23 +2156,36 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
 function renderSiteSidebar(currentDocument, documents, config) {
   const copy = messages(config);
   const byId = new Map(documents.map((document) => [document.id, document]));
-  const renderItems = (items) => items.map((item) => {
+  const navigationLabel = (document) => {
+    const prefix = typeof config.navigation?.labelPrefix === "string" ? config.navigation.labelPrefix : "";
+    return prefix && document.title.startsWith(prefix) ? document.title.slice(prefix.length).trimStart() : document.title;
+  };
+  const containsCurrent = (items) => navigationItemIds(items).includes(currentDocument.id);
+  const renderItems = (items, groupPath) => items.map((item, index) => {
+    const itemPath = groupPath + "-" + index;
     if (typeof item === "string") {
       const document = byId.get(item);
       return document
         ? '<a href="' + escapeAttribute(pageHref(currentDocument.id, document.id)) + '"' +
           (document.id === currentDocument.id ? ' aria-current="page"' : "") + '>' +
-          escapeHtml(document.title) + "</a>"
+          escapeHtml(navigationLabel(document)) + "</a>"
         : "";
     }
-    const nested = renderItems(item.items || []);
+    const nestedItems = item.items || [];
+    const nested = renderItems(nestedItems, itemPath);
     return nested
-      ? '<section class="nav-folder"><h3>' + escapeHtml(item.label) + "</h3>" + nested + "</section>"
+      ? '<details class="nav-folder" data-nav-group="' + escapeAttribute(itemPath) + '"' +
+        (containsCurrent(nestedItems) ? " open" : "") + '><summary>' + escapeHtml(item.label) +
+        '</summary><div class="nav-children">' + nested + "</div></details>"
       : "";
   }).join("");
-  const sections = config.navigation.sections.map((section) => {
-    const links = renderItems(section.items);
-    return links ? '<section><h2>' + escapeHtml(section.label) + '</h2>' + links + '</section>' : "";
+  const sections = config.navigation.sections.map((section, index) => {
+    const groupPath = "section-" + index;
+    const items = section.items || [];
+    const links = renderItems(items, groupPath);
+    return links ? '<details class="nav-section" data-nav-group="' + groupPath + '"' +
+      (containsCurrent(items) ? " open" : "") + '><summary>' + escapeHtml(section.label) +
+      '</summary><div class="nav-children">' + links + "</div></details>" : "";
   }).join("");
   return '<aside class="site-sidebar"><nav aria-label="' + escapeAttribute(copy.documentationNavigation) + '">' + sections + '</nav></aside>';
 }
