@@ -1,0 +1,23 @@
+flowchart LR
+  subgraph Sources
+    markdown[Markdown]
+    diagrams[Mermaid sources]
+  end
+  subgraph Build
+    parser[Content parser]
+    validator{Contracts valid?}
+    projector[Projection builder]
+  end
+  subgraph Delivery
+    site[Human site]
+    api[Agent API]
+  end
+  markdown --> parser
+  diagrams --> parser
+  parser --> validator
+  validator -- Yes --> projector
+  validator -- No --> parser
+  projector --> site
+  projector --> api
+  class projector focal
+

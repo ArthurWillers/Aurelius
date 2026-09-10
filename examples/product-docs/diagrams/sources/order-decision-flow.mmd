@@ -1,0 +1,9 @@
+flowchart LR
+  start([Order received]) --> stock{Stock available?}
+  stock -- Yes --> payment[Authorize payment]
+  stock -- No --> unavailable([Report unavailable item])
+  payment --> approved{Payment approved?}
+  approved -- Yes --> confirm([Confirm order])
+  approved -- No --> retry[Offer another payment method]
+  retry --> payment
+  class confirm focal

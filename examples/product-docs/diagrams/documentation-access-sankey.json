@@ -1,0 +1,52 @@
+{
+  "id": "documentation-access-sankey",
+  "kind": "sankey",
+  "title": "How readers reach an answer",
+  "description": "An illustrative Sankey shows 12,000 documentation sessions moving through four entry routes into answered, continued-reading, and escalated outcomes.",
+  "htmlSource": "diagrams/artifacts/documentation-access-sankey.html",
+  "interactive": false,
+  "summary": "This illustrative month starts with 12,000 documentation sessions. Site navigation accounts for 5,200 sessions, search for 4,000, the agent API for 2,000, and shared links for 800. Those routes produce 9,400 answered sessions, 1,600 sessions that continue reading, and 1,000 escalations; the two escalation ribbons are the single highlighted editorial path. Every node and flow uses one scale of 0.02 pixels per session, so band thickness and printed values remain consistent.",
+  "presentation": {
+    "width": 1200,
+    "height": 720
+  },
+  "data": {
+    "status": "illustrative",
+    "unit": "monthly documentation sessions",
+    "total": 12000,
+    "scalePixelsPerSession": 0.02,
+    "stages": [
+      { "id": "demand", "label": "Monthly demand" },
+      { "id": "entry-route", "label": "Entry route" },
+      { "id": "outcome", "label": "Session outcome" }
+    ],
+    "nodes": [
+      { "id": "sessions", "stage": "demand", "label": "Documentation sessions", "value": 12000 },
+      { "id": "navigation", "stage": "entry-route", "label": "Site navigation", "value": 5200 },
+      { "id": "search", "stage": "entry-route", "label": "Search", "value": 4000 },
+      { "id": "agent-api", "stage": "entry-route", "label": "Agent API", "value": 2000 },
+      { "id": "shared-links", "stage": "entry-route", "label": "Shared links", "value": 800 },
+      { "id": "answered", "stage": "outcome", "label": "Answered", "value": 9400 },
+      { "id": "continued", "stage": "outcome", "label": "Continued reading", "value": 1600 },
+      { "id": "escalated", "stage": "outcome", "label": "Escalated", "value": 1000 }
+    ],
+    "flows": [
+      { "from": "sessions", "to": "navigation", "value": 5200 },
+      { "from": "sessions", "to": "search", "value": 4000 },
+      { "from": "sessions", "to": "agent-api", "value": 2000 },
+      { "from": "sessions", "to": "shared-links", "value": 800 },
+      { "from": "navigation", "to": "answered", "value": 4400 },
+      { "from": "navigation", "to": "continued", "value": 800 },
+      { "from": "search", "to": "answered", "value": 3400 },
+      { "from": "search", "to": "escalated", "value": 600, "tone": "accent" },
+      { "from": "agent-api", "to": "answered", "value": 1200 },
+      { "from": "agent-api", "to": "continued", "value": 800 },
+      { "from": "shared-links", "to": "answered", "value": 400 },
+      { "from": "shared-links", "to": "escalated", "value": 400, "tone": "accent" }
+    ],
+    "editorialInsight": "One in twelve illustrative sessions still needs a human handoff."
+  },
+  "sourceRefs": [
+    "diagrams/artifacts/THIRD_PARTY_NOTICES.md"
+  ]
+}

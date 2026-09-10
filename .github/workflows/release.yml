@@ -1,0 +1,28 @@
+name: Create GitHub release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify release contents
+        run: npm pack --dry-run
+      - name: Create release notes and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes --title "Aurelius ${GITHUB_REF_NAME}"

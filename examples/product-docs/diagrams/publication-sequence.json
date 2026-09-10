@@ -1,0 +1,18 @@
+{
+  "id": "publication-sequence",
+  "kind": "sequence",
+  "title": "Declarative publication sequence",
+  "description": "An author submits Markdown and Mermaid, then receives either published projections or an actionable validation error.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/publication-sequence.mmd"
+  },
+  "summary": "Aurelius validates both content and diagram contracts before publication. Valid sources produce human and agent views; invalid sources return to the author with a targeted error.",
+  "presentation": { "width": 1200, "height": 520 },
+  "data": {
+    "focus": "Aurelius",
+    "actors": ["author", "aurelius", "validator", "publisher"],
+    "outcomes": ["published", "validation error"]
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}

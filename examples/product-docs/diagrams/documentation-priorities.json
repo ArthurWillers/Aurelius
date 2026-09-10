@@ -1,0 +1,19 @@
+{
+  "id": "documentation-priorities",
+  "kind": "quadrant",
+  "title": "Documentation priorities",
+  "description": "A value-versus-effort quadrant for deciding which documentation improvements to prioritize.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/documentation-priorities.mmd"
+  },
+  "summary": "Search metadata and Mermaid examples are quick wins; API provenance is a strategic investment, while legacy screenshots and cosmetic animation rank lower.",
+  "presentation": { "width": 1200, "height": 520 },
+  "data": {
+    "focus": "Mermaid examples",
+    "axes": ["effort", "reader value"],
+    "items": 5
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}
+

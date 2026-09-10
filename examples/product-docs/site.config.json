@@ -1,0 +1,49 @@
+{
+  "siteTitle": "Aurelius",
+  "siteDescription": "Static documentation that reads well for people and stays structured for agents.",
+  "language": "en",
+  "outputDirectory": "dist",
+  "framework": { "name": "Aurelius", "version": "0.4.0" },
+  "brand": {
+    "title": "Aurelius",
+    "kicker": "static documentation",
+    "name": "Aurelius",
+    "logoSource": "assets/logo.svg",
+    "logoAlt": "Aurelius logo"
+  },
+  "navigation": {
+    "primary": ["home", "getting-started", "publishing"],
+    "sections": [
+      { "label": "Overview", "items": ["home", "getting-started"] },
+      {
+        "label": "Build a site",
+        "items": [
+          { "label": "Authoring", "items": ["configuration", "content-model"] },
+          { "label": "Delivery", "items": ["publishing"] }
+        ]
+      },
+      {
+        "label": "Reference",
+        "items": [
+          { "label": "For agents", "items": ["agent-interface"] },
+          { "label": "Visual language", "items": ["declarative-visuals", "visual-types", "architecture-example", "large-canvas"] }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "left": "Aurelius",
+    "right": "One source for people and agents"
+  },
+  "colors": {
+    "paper": "#faf8f8",
+    "paper2": "#f1eeee",
+    "ink": "#2b2b2b",
+    "muted": "#4e4e4e",
+    "soft": "#777777",
+    "rule": "rgba(43, 43, 43, 0.14)",
+    "accent": "#84a59d",
+    "accentTint": "rgba(132, 165, 157, 0.16)",
+    "link": "#284b63"
+  }
+}

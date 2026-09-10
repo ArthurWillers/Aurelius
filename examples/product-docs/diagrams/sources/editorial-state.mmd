@@ -1,0 +1,8 @@
+stateDiagram-v2
+  direction LR
+  [*] --> Draft
+  Draft --> Review: submit
+  Review --> Validated: contracts pass
+  Review --> Draft: request changes
+  Validated --> Published: build projections
+  Published --> [*]

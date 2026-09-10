@@ -1,0 +1,23 @@
+{
+  "id": "publication-flow",
+  "kind": "architecture",
+  "title": "From source to reader",
+  "description": "Markdown and technical references pass through one build and become an editorial page, a JSON API, and an agent-readable corpus.",
+  "zones": [
+    { "label": "VERSIONED SOURCE", "x": 40, "y": 48, "width": 320, "height": 320 },
+    { "label": "PUBLICATION", "x": 400, "y": 48, "width": 744, "height": 320 }
+  ],
+  "nodes": [
+    { "id": "markdown", "kind": "input", "tag": "CONTENT", "label": "Markdown", "detail": "versioned pages", "x": 80, "y": 112, "width": 128, "height": 104 },
+    { "id": "sources", "kind": "input", "tag": "SOURCES", "label": "References", "detail": "traceable facts", "x": 80, "y": 240, "width": 128, "height": 104 },
+    { "id": "build", "kind": "focal", "tag": "BUILD", "label": "Aurelius", "detail": "validate and project", "x": 448, "y": 164, "width": 176, "height": 104 },
+    { "id": "site", "kind": "backend", "tag": "SITE", "label": "Human reading", "detail": "accessible HTML", "x": 720, "y": 96, "width": 176, "height": 104 },
+    { "id": "api", "kind": "store", "tag": "API", "label": "Agent reading", "detail": "JSON and llms.txt", "x": 720, "y": 232, "width": 176, "height": 104 }
+  ],
+  "edges": [
+    { "id": "compile", "from": "markdown", "to": "build", "label": "COMPILE" },
+    { "id": "ground", "from": "sources", "to": "build", "label": "GROUND", "tone": "accent" },
+    { "id": "render", "from": "build", "to": "site", "label": "RENDER" },
+    { "id": "index", "from": "build", "to": "api", "label": "INDEX", "tone": "link" }
+  ]
+}

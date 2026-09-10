@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How readers reach an answer · Sankey</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      color-scheme: light;
+      --paper: #faf8f8;
+      --paper-2: #f1eeee;
+      --ink: #2b2b2b;
+      --muted: #4e4e4e;
+      --soft: #777777;
+      --rule: rgba(43, 43, 43, 0.14);
+      --accent: #84a59d;
+      --accent-ribbon: rgba(132, 165, 157, 0.42);
+      --flow-ribbon: rgba(78, 78, 78, 0.18);
+      --font-serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      --font-sans: "Geist", Inter, ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "Geist Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
+    }
+
+    html { background: var(--paper); }
+
+    body {
+      min-height: 720px;
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-sans);
+    }
+
+    main {
+      width: min(100%, 1200px);
+      min-height: 720px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 500 12px/1.4 var(--font-mono);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--ink);
+      font: 400 36px/1.08 var(--font-serif);
+      letter-spacing: -0.02em;
+    }
+
+    .context {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .visual {
+      overflow: hidden;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .node-name {
+      fill: var(--ink);
+      font: 600 16px var(--font-sans);
+    }
+
+    .quantity {
+      fill: var(--muted);
+      font: 500 12px var(--font-mono);
+    }
+
+    .column-label, .legend-label {
+      fill: var(--muted);
+      font: 500 12px var(--font-mono);
+      letter-spacing: 0.12em;
+    }
+
+    .legend-copy {
+      fill: var(--muted);
+      font: 500 12px var(--font-sans);
+    }
+
+    .editorial-read {
+      fill: var(--muted);
+      font: italic 16px var(--font-serif);
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding-top: 12px;
+      color: var(--soft);
+      font: 500 11px/1.4 var(--font-mono);
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 780px) {
+      main { padding: 20px; }
+      header { grid-template-columns: 1fr; gap: 10px; }
+      h1 { font-size: 30px; }
+      .context { font-size: 13px; }
+      footer { align-items: flex-start; flex-direction: column; gap: 4px; }
+    }
+
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      body, main { min-width: 0; min-height: 0; background: #fff; }
+      main { width: 100%; padding: 0; }
+      header { grid-template-columns: 1fr 280px; }
+      .visual { break-inside: avoid; border-color: rgba(43, 43, 43, 0.22); }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">Authored HTML · Sankey</p>
+        <h1>How readers reach an answer</h1>
+      </div>
+      <p class="context">An illustrative month of 12,000 documentation sessions. Band thickness is proportional to session volume.</p>
+    </header>
+
+    <div class="visual">
+      <svg viewBox="0 0 1200 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="documentation-access-sankey-title documentation-access-sankey-desc" data-aurelius-print-source="true">
+        <title id="documentation-access-sankey-title">How readers reach an answer</title>
+        <desc id="documentation-access-sankey-desc">Sankey diagram showing 12,000 illustrative documentation sessions splitting across site navigation, search, the agent API, and shared links, then merging into 9,400 answered sessions, 1,600 continued-reading sessions, and 1,000 escalations.</desc>
+        <style>
+          .node-name { fill: #2b2b2b; font: 600 16px Inter, ui-sans-serif, system-ui, sans-serif; }
+          .quantity { fill: #4e4e4e; font: 500 12px "Geist Mono", Consolas, ui-monospace, monospace; }
+          .column-label, .legend-label { fill: #4e4e4e; font: 500 12px "Geist Mono", Consolas, ui-monospace, monospace; letter-spacing: .12em; }
+          .legend-copy { fill: #4e4e4e; font: 500 12px Inter, ui-sans-serif, system-ui, sans-serif; }
+          .editorial-read { fill: #4e4e4e; font: italic 16px Georgia, serif; }
+        </style>
+
+        <rect width="1200" height="560" fill="#faf8f8"/>
+
+        <text class="column-label" x="164" y="56" text-anchor="middle">MONTHLY DEMAND</text>
+        <text class="column-label" x="600" y="56" text-anchor="middle">ENTRY ROUTE</text>
+        <text class="column-label" x="1004" y="56" text-anchor="middle">SESSION OUTCOME</text>
+
+        <!-- Demand to entry route. One scale is used throughout: 0.02 px per session. -->
+        <path d="M172 120 C384 120 384 120 596 120 L596 224 C384 224 384 224 172 224 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M172 224 C384 224 384 256 596 256 L596 336 C384 336 384 304 172 304 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M172 304 C384 304 384 368 596 368 L596 408 C384 408 384 344 172 344 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M172 344 C384 344 384 440 596 440 L596 456 C384 456 384 360 172 360 Z" fill="rgba(78,78,78,0.18)"/>
+
+        <!-- Ordinary outcome flows. Both controls share the midpoint x for square attachment. -->
+        <path d="M608 120 C804 120 804 148 1000 148 L1000 236 C804 236 804 208 608 208 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M608 208 C804 208 804 344 1000 344 L1000 360 C804 360 804 224 608 224 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M608 268 C804 268 804 236 1000 236 L1000 304 C804 304 804 336 608 336 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M608 368 C804 368 804 304 1000 304 L1000 328 C804 328 804 392 608 392 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M608 392 C804 392 804 360 1000 360 L1000 376 C804 376 804 408 608 408 Z" fill="rgba(78,78,78,0.18)"/>
+        <path d="M608 448 C804 448 804 328 1000 328 L1000 336 C804 336 804 456 608 456 Z" fill="rgba(78,78,78,0.18)"/>
+
+        <!-- One focal story: routes that end in an escalation. -->
+        <path d="M608 256 C804 256 804 120 1000 120 L1000 132 C804 132 804 268 608 268 Z" fill="rgba(132,165,157,0.42)"/>
+        <path d="M608 440 C804 440 804 132 1000 132 L1000 140 C804 140 804 448 608 448 Z" fill="rgba(132,165,157,0.42)"/>
+
+        <!-- Node bars. -->
+        <rect x="160" y="120" width="12" height="240" fill="#2b2b2b"/>
+        <rect x="596" y="120" width="12" height="104" fill="#2b2b2b"/>
+        <rect x="596" y="256" width="12" height="80" fill="#2b2b2b"/>
+        <rect x="596" y="368" width="12" height="40" fill="#2b2b2b"/>
+        <rect x="596" y="440" width="12" height="16" fill="#2b2b2b"/>
+        <rect x="1000" y="120" width="12" height="20" fill="#2b2b2b"/>
+        <rect x="1000" y="148" width="12" height="188" fill="#2b2b2b"/>
+        <rect x="1000" y="344" width="12" height="32" fill="#2b2b2b"/>
+
+        <!-- Labels. -->
+        <text class="node-name" x="140" y="220" text-anchor="end"><tspan x="140">Documentation</tspan><tspan x="140" dy="20">sessions</tspan></text>
+        <text class="quantity" x="140" y="260" text-anchor="end">12,000 sessions</text>
+
+        <text class="node-name" x="600" y="92" text-anchor="middle">Site navigation</text>
+        <text class="quantity" x="600" y="108" text-anchor="middle">5,200 sessions</text>
+        <text class="node-name" x="600" y="232" text-anchor="middle">Search</text>
+        <text class="quantity" x="600" y="248" text-anchor="middle">4,000 sessions</text>
+        <text class="node-name" x="600" y="344" text-anchor="middle">Agent API</text>
+        <text class="quantity" x="600" y="360" text-anchor="middle">2,000 sessions</text>
+        <text class="node-name" x="600" y="416" text-anchor="middle">Shared links</text>
+        <text class="quantity" x="600" y="432" text-anchor="middle">800 sessions</text>
+
+        <text class="node-name" x="1032" y="120">Escalated</text>
+        <text class="quantity" x="1032" y="136">1,000 sessions</text>
+        <text class="node-name" x="1032" y="232">Answered</text>
+        <text class="quantity" x="1032" y="252">9,400 sessions</text>
+        <text class="node-name" x="1032" y="352">Continued reading</text>
+        <text class="quantity" x="1032" y="372">1,600 sessions</text>
+
+        <!-- Legend lives outside the data area. -->
+        <line x1="40" y1="488" x2="1160" y2="488" stroke="rgba(43,43,43,0.14)" stroke-width="0.8"/>
+        <text class="legend-label" x="40" y="512">LEGEND</text>
+        <rect x="40" y="528" width="16" height="8" fill="rgba(78,78,78,0.18)" stroke="#4e4e4e"/>
+        <text class="legend-copy" x="68" y="536">Session flow</text>
+        <rect x="220" y="528" width="16" height="8" fill="rgba(132,165,157,0.42)" stroke="#84a59d"/>
+        <text class="legend-copy" x="248" y="536">Escalation path</text>
+        <rect x="432" y="528" width="16" height="8" fill="#2b2b2b"/>
+        <text class="legend-copy" x="460" y="536">Stage total</text>
+        <text class="editorial-read" x="680" y="536">One in twelve sessions still needs a human handoff.</text>
+      </svg>
+    </div>
+
+    <footer>
+      <span>ILLUSTRATIVE DATA · VALUES ARE NOT PRODUCT ANALYTICS</span>
+      <span>LIGHT THEME · STATIC WITHOUT JAVASCRIPT</span>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,24 @@
+classDiagram
+  direction LR
+  class VisualSource {
+    <<interface>>
+    +validate() Result
+    +render() Projection
+  }
+  class MermaidSource {
+    +String language
+    +String path
+    +parse() DiagramType
+  }
+  class DiagramEnvelope {
+    +String id
+    +String kind
+    +String summary
+  }
+  class AgentProjection {
+    +String renderMode
+    +Object data
+  }
+  VisualSource <|.. MermaidSource : implements
+  DiagramEnvelope *-- VisualSource : owns
+  DiagramEnvelope --> AgentProjection : produces

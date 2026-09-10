@@ -1,0 +1,47 @@
+{
+  "name": "@avw/aurelius",
+  "version": "0.4.0",
+  "description": "Static documentation framework for people and agents.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArthurWillers/aurelius.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ArthurWillers/aurelius/issues"
+  },
+  "homepage": "https://github.com/ArthurWillers/aurelius#readme",
+  "type": "module",
+  "files": [
+    "cli.mjs",
+    "core/",
+    "runtime/",
+    "templates/"
+  ],
+  "bin": {
+    "aurelius": "./cli.mjs"
+  },
+  "scripts": {
+    "check": "node --check cli.mjs && node --check core/build.mjs && node --check core/config.mjs && node --check core/content.mjs && node --check core/dev.mjs && node --check core/projections.mjs && node --check core/scaffold.mjs && node --check core/schemas.mjs && node --check core/shared.mjs && node --check core/validation.mjs && node --check core/diagrams/artifacts.mjs && node --check core/diagrams/gallery.mjs && node --check core/diagrams/mermaid-design.mjs && node --check core/diagrams/mermaid.mjs && node --check core/diagrams/registry.mjs && node --check runtime/editorial-mermaid.js && node --check runtime/mermaid.js && node --check runtime/site.js",
+    "aurelius": "node cli.mjs",
+    "build": "node cli.mjs build --site examples/product-docs",
+    "validate": "node cli.mjs check --site examples/product-docs",
+    "example:dev": "node cli.mjs dev --site examples/product-docs",
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "documentation",
+    "static-site-generator",
+    "agent-readable",
+    "diagrams"
+  ],
+  "dependencies": {
+    "dompurify": "^3.4.15",
+    "mermaid": "^11.17.2"
+  }
+}

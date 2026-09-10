@@ -1,0 +1,71 @@
+{
+  "id": "documentation-lifecycle",
+  "kind": "canvas",
+  "title": "Documentation lifecycle at scale",
+  "description": "A panoramic five-phase flow showing how a documentation change moves from evidence and planning through authoring, validation, publication, and ongoing maintenance.",
+  "groups": [
+    { "id": "plan", "label": "01 · PLAN", "x": 0, "y": 0, "width": 720, "height": 1480 },
+    { "id": "author", "label": "02 · AUTHOR", "x": 800, "y": 0, "width": 720, "height": 1480 },
+    { "id": "validate", "label": "03 · VALIDATE", "x": 1600, "y": 0, "width": 720, "height": 1480 },
+    { "id": "publish", "label": "04 · PUBLISH", "x": 2400, "y": 0, "width": 720, "height": 1480 },
+    { "id": "operate", "label": "05 · OPERATE", "x": 3200, "y": 0, "width": 720, "height": 1480 }
+  ],
+  "nodes": [
+    { "id": "request", "type": "text", "text": "## Capture request\n\nRecord the audience, question, urgency, and expected outcome.", "x": 80, "y": 100, "width": 560, "height": 150, "kind": "input" },
+    { "id": "evidence", "type": "text", "text": "## Gather evidence\n\nLocate code, decisions, contracts, and current operational facts.", "x": 80, "y": 370, "width": 560, "height": 150, "kind": "step" },
+    { "id": "scope", "type": "text", "text": "## Define scope\n\nChoose the smallest useful reader journey and explicit exclusions.", "x": 80, "y": 640, "width": 560, "height": 150, "kind": "decision" },
+    { "id": "owners", "type": "text", "text": "## Assign owners\n\nName the writer, technical reviewer, and publishing owner.", "x": 80, "y": 910, "width": 560, "height": 150, "kind": "step" },
+    { "id": "outline", "type": "text", "text": "## Approve outline\n\nAgree on pages, relationships, diagrams, and success criteria.", "x": 80, "y": 1180, "width": 560, "height": 150, "kind": "focal" },
+
+    { "id": "frontmatter", "type": "text", "text": "## Create page contracts\n\nAssign stable IDs, concise descriptions, status, and visibility.", "x": 880, "y": 100, "width": 560, "height": 150, "kind": "step" },
+    { "id": "draft", "type": "text", "text": "## Draft the journey\n\nWrite for the reader's task with direct headings and examples.", "x": 880, "y": 370, "width": 560, "height": 150, "kind": "focal" },
+    { "id": "diagram", "type": "text", "text": "## Model the diagram\n\nChoose a bounded architecture view or a navigable Canvas.", "x": 880, "y": 640, "width": 560, "height": 150, "kind": "decision" },
+    { "id": "trace", "type": "text", "text": "## Attach source references\n\nKeep factual claims close to their technical evidence.", "x": 880, "y": 910, "width": 560, "height": 150, "kind": "step" },
+    { "id": "relationships", "type": "text", "text": "## Connect related pages\n\nBuild semantic paths that do not depend on menu position.", "x": 880, "y": 1180, "width": 560, "height": 150, "kind": "step" },
+
+    { "id": "check", "type": "text", "text": "## Run aurelius check\n\nValidate IDs, relations, anchors, assets, and diagram geometry.", "x": 1680, "y": 100, "width": 560, "height": 150, "kind": "focal" },
+    { "id": "technical-review", "type": "text", "text": "## Review technical accuracy\n\nCompare every important statement with the declared source.", "x": 1680, "y": 370, "width": 560, "height": 150, "kind": "step" },
+    { "id": "editorial-review", "type": "text", "text": "## Review readability\n\nCheck structure, terminology, examples, and information scent.", "x": 1680, "y": 640, "width": 560, "height": 150, "kind": "step" },
+    { "id": "accessibility", "type": "text", "text": "## Test accessibility\n\nInspect keyboard use, focus, landmarks, contrast, and alt text.", "x": 1680, "y": 910, "width": 560, "height": 150, "kind": "step" },
+    { "id": "approval", "type": "text", "text": "## Approve the release\n\nResolve blocking findings or return the change to authoring.", "x": 1680, "y": 1180, "width": 560, "height": 150, "kind": "decision" },
+
+    { "id": "build", "type": "text", "text": "## Build static output\n\nGenerate HTML, Markdown, JSON APIs, SVG, and LLM indexes.", "x": 2480, "y": 100, "width": 560, "height": 150, "kind": "focal" },
+    { "id": "preview", "type": "text", "text": "## Inspect the build\n\nReview responsive navigation, full diagrams, links, and search.", "x": 2480, "y": 370, "width": 560, "height": 150, "kind": "step" },
+    { "id": "print", "type": "text", "text": "## Review print and PDF\n\nConfirm the light palette and unsplit code figures.", "x": 2480, "y": 640, "width": 560, "height": 150, "kind": "step" },
+    { "id": "deploy", "type": "text", "text": "## Deploy dist\n\nPublish the generated directory on the selected static host.", "x": 2480, "y": 910, "width": 560, "height": 150, "kind": "step" },
+    { "id": "verify", "type": "text", "text": "## Verify production\n\nSmoke-test canonical pages and machine entry points.", "x": 2480, "y": 1180, "width": 560, "height": 150, "kind": "decision" },
+
+    { "id": "observe", "type": "text", "text": "## Observe usage\n\nCollect search gaps, support questions, and broken journeys.", "x": 3280, "y": 180, "width": 560, "height": 150, "kind": "step" },
+    { "id": "change", "type": "text", "text": "## Detect source changes\n\nIdentify code or policy changes that invalidate current facts.", "x": 3280, "y": 500, "width": 560, "height": 150, "kind": "decision" },
+    { "id": "refresh", "type": "text", "text": "## Refresh content\n\nUpdate the source, status, relationships, and diagrams together.", "x": 3280, "y": 820, "width": 560, "height": 150, "kind": "focal" },
+    { "id": "archive", "type": "text", "text": "## Archive deliberately\n\nRetire obsolete pages without erasing decision history.", "x": 3280, "y": 1140, "width": 560, "height": 150, "kind": "optional" }
+  ],
+  "edges": [
+    { "fromNode": "request", "fromSide": "bottom", "toNode": "evidence", "toSide": "top" },
+    { "fromNode": "evidence", "fromSide": "bottom", "toNode": "scope", "toSide": "top" },
+    { "fromNode": "scope", "fromSide": "bottom", "toNode": "owners", "toSide": "top" },
+    { "fromNode": "owners", "fromSide": "bottom", "toNode": "outline", "toSide": "top" },
+    { "fromNode": "outline", "fromSide": "right", "toNode": "frontmatter", "toSide": "left", "tone": "accent" },
+    { "fromNode": "frontmatter", "fromSide": "bottom", "toNode": "draft", "toSide": "top" },
+    { "fromNode": "draft", "fromSide": "bottom", "toNode": "diagram", "toSide": "top" },
+    { "fromNode": "diagram", "fromSide": "bottom", "toNode": "trace", "toSide": "top" },
+    { "fromNode": "trace", "fromSide": "bottom", "toNode": "relationships", "toSide": "top" },
+    { "fromNode": "relationships", "fromSide": "right", "toNode": "check", "toSide": "left", "tone": "accent" },
+    { "fromNode": "check", "fromSide": "bottom", "toNode": "technical-review", "toSide": "top" },
+    { "fromNode": "technical-review", "fromSide": "bottom", "toNode": "editorial-review", "toSide": "top" },
+    { "fromNode": "editorial-review", "fromSide": "bottom", "toNode": "accessibility", "toSide": "top" },
+    { "fromNode": "accessibility", "fromSide": "bottom", "toNode": "approval", "toSide": "top" },
+    { "fromNode": "approval", "fromSide": "left", "toNode": "draft", "toSide": "right", "tone": "return" },
+    { "fromNode": "approval", "fromSide": "right", "toNode": "build", "toSide": "left", "tone": "accent" },
+    { "fromNode": "build", "fromSide": "bottom", "toNode": "preview", "toSide": "top" },
+    { "fromNode": "preview", "fromSide": "bottom", "toNode": "print", "toSide": "top" },
+    { "fromNode": "print", "fromSide": "bottom", "toNode": "deploy", "toSide": "top" },
+    { "fromNode": "deploy", "fromSide": "bottom", "toNode": "verify", "toSide": "top" },
+    { "fromNode": "verify", "fromSide": "left", "toNode": "preview", "toSide": "right", "tone": "return" },
+    { "fromNode": "verify", "fromSide": "right", "toNode": "observe", "toSide": "left", "tone": "accent" },
+    { "fromNode": "observe", "fromSide": "bottom", "toNode": "change", "toSide": "top" },
+    { "fromNode": "change", "fromSide": "bottom", "toNode": "refresh", "toSide": "top" },
+    { "fromNode": "refresh", "fromSide": "bottom", "toNode": "archive", "toSide": "top" },
+    { "fromNode": "refresh", "fromSide": "left", "toNode": "evidence", "toSide": "right", "tone": "return" }
+  ]
+}

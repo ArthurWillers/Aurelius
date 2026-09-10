@@ -1,0 +1,19 @@
+{
+  "id": "publishing-dependencies",
+  "kind": "dependency",
+  "title": "Publishing dependencies",
+  "description": "A dependency graph connecting declarative sources, validation, projection building, and delivery surfaces.",
+  "source": {
+    "language": "mermaid",
+    "path": "diagrams/sources/publishing-dependencies.mmd"
+  },
+  "summary": "Markdown and Mermaid converge at the parser, pass one validation gate, and feed a focal projection builder that emits the human site and agent API.",
+  "presentation": { "width": 1200, "height": 480 },
+  "data": {
+    "focus": "Projection builder",
+    "groups": ["sources", "build", "delivery"],
+    "outputs": ["human site", "agent API"]
+  },
+  "sourceRefs": ["content/declarative-visuals.md"]
+}
+

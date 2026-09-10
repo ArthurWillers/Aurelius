@@ -1,0 +1,3 @@
+interface:
+  display_name: "Documentation Migration"
+  short_description: "Migrate external documentation, starting with Obsidian vaults"
