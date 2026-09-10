@@ -50,7 +50,15 @@ export function diagramSchema() {
           discarded: { type: "object", properties: { paintDirectives: { type: "integer", minimum: 0 } } },
         },
       },
-      presentation: { type: "object", properties: { width: { type: "number", minimum: 640, maximum: 2200 }, height: { type: "number", minimum: 280, maximum: 1600 } } },
+      presentation: {
+        type: "object",
+        properties: {
+          width: { type: "number", minimum: 640, maximum: 2200 },
+          height: { type: "number", minimum: 280, maximum: 1600 },
+          initialZoom: { type: "number", minimum: 0.5, maximum: 4 },
+          initialPosition: { enum: ["center", "start"] },
+        },
+      },
       data: { type: ["object", "array", "null"] }, sourcePath: { type: "string" }, renderMode: { enum: ["native", "svg", "html", "mermaid", "canvas"] }, apiVersion: { const: 1 },
     },
     allOf: [

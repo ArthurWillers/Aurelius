@@ -61,42 +61,6 @@
     });
   }
 
-  function roundedOrthogonalPath(start, end) {
-    var dx = end.x - start.x;
-    var dy = end.y - start.y;
-    var radius = Math.min(8, Math.abs(dx) / 4, Math.abs(dy) / 4);
-    if (!Number.isFinite(radius) || radius < 2) return "M " + start.x + " " + start.y + " L " + end.x + " " + end.y;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-      var middleX = start.x + dx / 2;
-      return "M " + start.x + " " + start.y +
-        " H " + (middleX - Math.sign(dx) * radius) +
-        " Q " + middleX + " " + start.y + " " + middleX + " " + (start.y + Math.sign(dy) * radius) +
-        " V " + (end.y - Math.sign(dy) * radius) +
-        " Q " + middleX + " " + end.y + " " + (middleX + Math.sign(dx) * radius) + " " + end.y +
-        " H " + end.x;
-    }
-    var middleY = start.y + dy / 2;
-    return "M " + start.x + " " + start.y +
-      " V " + (middleY - Math.sign(dy) * radius) +
-      " Q " + start.x + " " + middleY + " " + (start.x + Math.sign(dx) * radius) + " " + middleY +
-      " H " + (end.x - Math.sign(dx) * radius) +
-      " Q " + end.x + " " + middleY + " " + end.x + " " + (middleY + Math.sign(dy) * radius) +
-      " V " + end.y;
-  }
-
-  function refineGeometry(svg, surface) {
-    var kind = surface.dataset.mermaidKind;
-    if (kind !== "er" && kind !== "db-schema") return;
-    svg.querySelectorAll("path.relationshipLine").forEach(function (path) {
-      try {
-        var length = path.getTotalLength();
-        if (length) path.setAttribute("d", roundedOrthogonalPath(path.getPointAtLength(0), path.getPointAtLength(length)));
-      } catch (error) {
-        if (window.console && console.debug) console.debug("Aurelius Mermaid geometry:", error);
-      }
-    });
-  }
-
   function setupNavigation(surface, svg) {
     var messages = window.__AURELIUS_MESSAGES__ || {};
     var viewport = surface.querySelector("[data-mermaid-viewport]");
@@ -105,13 +69,33 @@
     if (!viewport || rawViewBox.length !== 4 || rawViewBox.some(function (value) { return !Number.isFinite(value); })) return;
 
     var original = rawViewBox.slice();
-    var current = original.slice();
-    var zoom = 1;
+    var fitted = original.slice();
+    var initialZoom = Math.max(0.5, Math.min(4, Number(surface.dataset.mermaidInitialZoom) || 1));
+    var initialPosition = surface.dataset.mermaidInitialPosition === "start" ? "start" : "center";
+    var analysis = {};
+    try { analysis = JSON.parse(surface.dataset.mermaidAnalysis || "{}"); } catch (error) { analysis = {}; }
+    var direction = String(analysis.direction || "").toUpperCase();
+    var current = fitted.slice();
+    var zoom = initialZoom;
     var drag = null;
     svg.removeAttribute("width");
     svg.removeAttribute("height");
     svg.style.maxWidth = "none";
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    function updateFitted() {
+      var viewportBounds = viewport.getBoundingClientRect();
+      var viewportRatio = viewportBounds.width && viewportBounds.height ? viewportBounds.width / viewportBounds.height : original[2] / original[3];
+      var originalRatio = original[2] / original[3];
+      fitted = original.slice();
+      if (viewportRatio > originalRatio) {
+        fitted[2] = original[3] * viewportRatio;
+        fitted[0] = original[0] - (fitted[2] - original[2]) / 2;
+      } else if (viewportRatio < originalRatio) {
+        fitted[3] = original[2] / viewportRatio;
+        fitted[1] = original[1] - (fitted[3] - original[3]) / 2;
+      }
+    }
 
     function clamp(x, y, width, height) {
       var minX = width <= original[2] ? original[0] : original[0] + (original[2] - width) / 2;
@@ -130,9 +114,24 @@
       if (zoomOutput) zoomOutput.textContent = Math.round(zoom * 100) + "%";
     }
 
+    function viewAt(nextZoom, position) {
+      var width = fitted[2] / nextZoom;
+      var height = fitted[3] / nextZoom;
+      var x = original[0] + (original[2] - width) / 2;
+      var y = original[1] + (original[3] - height) / 2;
+      if (position === "start") {
+        if (direction === "LR") x = original[0];
+        else if (direction === "RL") x = original[0] + original[2] - width;
+        else if (direction === "BT") y = original[1] + original[3] - height;
+        else y = original[1];
+      }
+      return clamp(x, y, width, height);
+    }
+
     function reset() {
-      zoom = 1;
-      setViewBox(original.slice());
+      updateFitted();
+      zoom = initialZoom;
+      setViewBox(viewAt(zoom, initialPosition));
       updateZoom();
     }
 
@@ -143,8 +142,8 @@
       var anchorX = current[0] + current[2] * ratioX;
       var anchorY = current[1] + current[3] * ratioY;
       zoom = Math.max(0.5, Math.min(4, nextZoom));
-      var width = original[2] / zoom;
-      var height = original[3] / zoom;
+      var width = fitted[2] / zoom;
+      var height = fitted[3] / zoom;
       setViewBox(clamp(anchorX - width * ratioX, anchorY - height * ratioY, width, height));
       updateZoom();
     }
@@ -164,10 +163,12 @@
           else if (surface.requestFullscreen) surface.requestFullscreen().catch(function () {
             surface.classList.toggle("is-expanded");
             updateFullscreenControl();
+            resetAfterLayoutChange();
           });
           else {
             surface.classList.toggle("is-expanded");
             updateFullscreenControl();
+            resetAfterLayoutChange();
           }
         }
       });
@@ -181,13 +182,22 @@
       });
     }
 
-    document.addEventListener("fullscreenchange", updateFullscreenControl);
+    function resetAfterLayoutChange() {
+      window.requestAnimationFrame(function () { reset(); });
+    }
+
+    document.addEventListener("fullscreenchange", function () {
+      updateFullscreenControl();
+      resetAfterLayoutChange();
+    });
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && surface.classList.contains("is-expanded")) {
         surface.classList.remove("is-expanded");
         updateFullscreenControl();
+        resetAfterLayoutChange();
       }
     });
+    window.addEventListener("resize", resetAfterLayoutChange);
     viewport.addEventListener("pointerdown", function (event) {
       if (event.pointerType === "touch" && zoom === 1 && !document.fullscreenElement && !surface.classList.contains("is-expanded")) return;
       drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, viewBox: current.slice() };
@@ -222,8 +232,8 @@
       else if (event.key === "ArrowUp") { event.preventDefault(); panBy(0, -current[3] * 0.08); }
       else if (event.key === "ArrowDown") { event.preventDefault(); panBy(0, current[3] * 0.08); }
     });
+    reset();
     updateFullscreenControl();
-    updateZoom();
   }
 
   if (!engine || typeof engine.render !== "function") {
@@ -280,7 +290,6 @@
       if (svg) {
         ensureAccessibility(svg, surface, index);
         applyEditorialTreatment(svg, surface);
-        refineGeometry(svg, surface);
         setupNavigation(surface, svg);
       }
       if (result.bindFunctions) result.bindFunctions(target);

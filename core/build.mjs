@@ -1050,6 +1050,8 @@ function renderMermaidSurface(diagram, options = {}) {
   const config = options.config || { language: "pt-BR" };
   const copy = messages(config);
   const height = Math.max(280, Math.min(900, Number(diagram.presentation?.height) || 480));
+  const initialZoom = Math.max(0.5, Math.min(4, Number(diagram.presentation?.initialZoom) || 1));
+  const initialPosition = diagram.presentation?.initialPosition === "start" ? "start" : "center";
   const focus = [diagram.data?.focus, diagram.data?.aggregateRoot, diagram.declarativeAnalysis?.focus].flat(2).filter(Boolean);
   const openLink = options.openHref
     ? '<a class="mermaid-open" href="' + escapeAttribute(options.openHref) + '">' + escapeHtml(copy.openFull) + "</a>"
@@ -1059,6 +1061,8 @@ function renderMermaidSurface(diagram, options = {}) {
       '" data-mermaid-shell data-mermaid data-mermaid-title="' + escapeAttribute(diagram.title) +
       '" data-mermaid-description="' + escapeAttribute(diagram.description) +
       '" data-mermaid-kind="' + escapeAttribute(diagram.kind) +
+      '" data-mermaid-initial-zoom="' + initialZoom +
+      '" data-mermaid-initial-position="' + initialPosition +
       '" data-mermaid-focus="' + escapeAttribute(JSON.stringify(focus)) +
       '" data-mermaid-analysis="' + escapeAttribute(JSON.stringify(diagram.declarativeAnalysis || {})) +
       '" style="--mermaid-height:' + height + 'px">',
@@ -1167,7 +1171,8 @@ function mermaidScripts(outputFile, config, mermaidJs) {
       ".cluster rect{fill:rgba(45,49,66,0.02)!important;stroke:" + design.ruleSolid + "!important;stroke-width:.8px!important;stroke-dasharray:4 4;rx:8px;ry:8px}",
       ".cluster-label text,.cluster-label span,.cluster-label p{fill:" + design.muted + "!important;color:" + design.muted + "!important;font-family:Geist Mono,ui-monospace,monospace!important;font-size:8px!important;font-weight:500!important;letter-spacing:.14em;text-transform:uppercase}",
       ".flowchart-link,.edgePath path,.relation,.relationshipLine{stroke:" + design.muted + "!important;stroke-width:1.2px!important;filter:none!important}",
-      ".marker,.marker path,.arrowheadPath{fill:" + design.muted + "!important;stroke:" + design.muted + "!important}",
+      ".arrowheadPath{fill:" + design.muted + "!important;stroke:" + design.muted + "!important}",
+      ".marker,.marker path{fill:none!important;stroke:" + design.muted + "!important;stroke-width:1.2px!important}",
       ".edgeLabel rect,.labelBkg,.relationshipLabelBox{fill:" + design.paper + "!important;opacity:1!important;rx:2px;ry:2px}",
       ".edgeLabel,.edgeLabel p,.edgeLabel span,.edgeLabel text,.relationshipLabel{color:" + design.soft + "!important;fill:" + design.soft + "!important;font-family:Geist Mono,ui-monospace,monospace!important;font-size:8px!important;font-weight:400!important;letter-spacing:.06em}",
       ".actor{fill:#fff!important;stroke:" + design.ink + "!important;stroke-width:1px!important;rx:6px;ry:6px}",

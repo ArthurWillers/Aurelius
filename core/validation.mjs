@@ -71,6 +71,8 @@ export async function validate(documents, diagrams, config, siteRoot) {
     if (diagram.presentation !== undefined) {
       if (!diagram.presentation || typeof diagram.presentation !== "object" || Array.isArray(diagram.presentation)) throw new Error("presentation precisa ser objeto em " + diagram.sourcePath);
       if (!Number.isFinite(diagram.presentation.width) || diagram.presentation.width < 640 || diagram.presentation.width > 2200 || !Number.isFinite(diagram.presentation.height) || diagram.presentation.height < 280 || diagram.presentation.height > 1600) throw new Error("presentation.width precisa ficar entre 640–2200 e presentation.height entre 280–1600 em " + diagram.sourcePath);
+      if (diagram.presentation.initialZoom !== undefined && (!Number.isFinite(diagram.presentation.initialZoom) || diagram.presentation.initialZoom < 0.5 || diagram.presentation.initialZoom > 4)) throw new Error("presentation.initialZoom precisa ficar entre 0.5–4 em " + diagram.sourcePath);
+      if (diagram.presentation.initialPosition !== undefined && !["center", "start"].includes(diagram.presentation.initialPosition)) throw new Error("presentation.initialPosition precisa ser center ou start em " + diagram.sourcePath);
     }
     if (!supportedDiagramKinds.has(diagram.kind)) throw new Error("Tipo de diagrama não suportado em " + diagram.sourcePath + ": " + diagram.kind);
     if (diagramIds.has(diagram.id)) throw new Error("ID de diagrama duplicado: " + diagram.id);

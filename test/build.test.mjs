@@ -87,6 +87,7 @@ async function createSite() {
       id: "release-decision", kind: "flowchart", title: "Release decision", description: "A declarative release decision flow.",
       source: { language: "mermaid", path: "diagrams/release-decision.mmd" },
       summary: "A valid draft is published, while an invalid draft returns for another editing cycle.",
+      presentation: { width: 1200, height: 520, initialZoom: 1.5, initialPosition: "start" },
       data: { outcomes: ["publish", "revise"] },
     }, null, 2)),
   ]);
@@ -182,6 +183,9 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.match(decisionHtml, /assets\/aurelius\/mermaid\.min\.js/);
   assert.match(decisionHtml, /data-mermaid-control="full"/);
   assert.match(decisionHtml, /data-mermaid-viewport/);
+  assert.match(decisionHtml, /data-mermaid-initial-zoom="1\.5"/);
+  assert.match(decisionHtml, /data-mermaid-initial-position="start"/);
+  assert.match(decisionHtml, /var fitted = original\.slice\(\)/);
   assert.match(decisionHtml, /class="mermaid-legend"/);
   assert.match(decisionHtml, /Diagram Design · Mermaid/);
   assert.match(decisionHtml, /setupNavigation\(surface, svg\)/);

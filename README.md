@@ -30,6 +30,11 @@ For a temporary local integration, use a direct path instead of global `npm link
 npm install --save-dev /absolute/path/to/Aurelius
 ```
 
+The npm package includes the portable authoring skills under
+`node_modules/@avw/aurelius/.agents/skills/`. This keeps the documentation and
+migration workflows available with the exact Aurelius version installed by the
+project.
+
 ## Create and build a site
 
 Create a new site. If `logo.svg`, `logo.png`, `logo.jpeg`, or `logo.jpg` exists in the current directory, Aurelius copies the first match into the site. Otherwise it creates an editable generic SVG logo.
@@ -130,6 +135,9 @@ git push origin v0.4.0
 
 - [Aurelius documentation](.agents/skills/aurelius-documentation/SKILL.md) covers authoring, validating, and publishing an Aurelius site.
 - [Documentation migration](.agents/skills/documentation-migration/SKILL.md) covers migrations from Obsidian vaults, including Markdown, Canvas, Bases, links, attachments, and metadata.
+
+Both skill directories are part of the npm tarball; they are not repository-only
+development files.
 
 ## License
 
