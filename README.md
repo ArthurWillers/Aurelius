@@ -9,7 +9,7 @@ Aurelius is a local static documentation generator for people and agents. It tur
 Install Aurelius from a tagged GitHub release in the project that owns the documentation. This records the resolved revision in `package-lock.json`, so local work and CI use the same version:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.4
+npm install --save-dev github:ArthurWillers/Aurelius#v0.4.5
 ```
 
 Clone the repository only to contribute to Aurelius or maintain a fork:
@@ -131,11 +131,11 @@ Do not commit `dist/`: the workflow rebuilds it and uploads only the generated a
 Create and push a release tag:
 
 ```bash
-git tag v0.4.4
+git tag v0.4.5
 ```
 
 ```bash
-git push origin v0.4.4
+git push origin v0.4.5
 ```
 
 ## Project skills

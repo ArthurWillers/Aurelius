@@ -1,31 +1,31 @@
-# Contrato de autoria visual
+# Visual Authoring Contract
 
-Leia esta referência ao criar, importar ou revisar um visual Aurelius. O objetivo é manter uma única fonte visual legível na página, em tela cheia, na impressão e nas projeções para agentes.
+Read this reference when creating, importing, or revising an Aurelius visual. The goal is to keep a single visual source readable on the page, in full view, in print, and in agent-facing projections.
 
-## Escolha da fonte
+## Choose the source
 
-| Fonte | Use quando | Evite quando |
+| Source | Use when | Avoid when |
 |---|---|---|
-| Mermaid declarativo | UML, decisões, fluxogramas, sequência, estado, ER, Gantt, jornada ou gráfico cabe na gramática Mermaid e a manutenção deve evitar SVG/HTML. | A composição precisa de uma gramática que o Mermaid não representa com clareza ou de interação autoral. |
+| Declarative Mermaid | UML, decisions, flowcharts, sequence, state, ER, Gantt, journeys, or a chart fits the Mermaid grammar and maintenance should avoid SVG/HTML. | The composition needs a grammar Mermaid cannot represent clearly or needs authored interaction. |
 
-No ER declarativo, também são aceitas cardinalidades legíveis no relacionamento: `A 1 -- N B : contains`, `A N -- N B : associates` e `A 1 -- 1 B : owns`. O build as converte para crow-foot antes de validar o Mermaid, sem alterar a fonte que agentes recebem.
-| JSON nativo | A estrutura cabe no modelo semântico do Aurelius e deve permanecer fácil de editar como dados. É a primeira opção para `architecture` e `canvas`. | A composição exige uma gramática visual que o renderer nativo não representa bem. |
-| `svgSource` | O resultado é estático, vetorial e precisa de composição precisa. | Há interação necessária ou uma página editorial completa ao redor do gráfico. |
-| `htmlSource` | Um agente precisa controlar HTML, CSS e SVG para produzir uma composição editorial, um gráfico avançado ou uma interação acessível. | Um renderer nativo ou SVG simples já comunica o mesmo conteúdo. |
+In declarative ER diagrams, readable relationship cardinalities are also accepted: `A 1 -- N B : contains`, `A N -- N B : associates`, and `A 1 -- 1 B : owns`. The build converts them to crow-foot notation before validating Mermaid, without changing the source that agents receive.
+| Native JSON | The structure fits Aurelius's semantic model and should remain easy to edit as data. This is the first option for `architecture` and `canvas`. | The composition needs a visual grammar that the native renderer does not represent well. |
+| `svgSource` | The result is static, vector-based, and needs precise composition. | Interaction is required or a complete editorial page is needed around the chart. |
+| `htmlSource` | An agent needs to control HTML, CSS, and SVG to produce an editorial composition, an advanced chart, or accessible interaction. | A native renderer or simple SVG already communicates the same content. |
 
-O modo de autoria não altera o tipo semântico: mantenha `kind` como `sankey`, `sequence`, `timeline` ou outro tipo registrado. Uma fonte Mermaid usa `source.language: mermaid` e exatamente um de `source.path` e `source.code`; não a combine com `svgSource` ou `htmlSource`. Um HTML autoral pode declarar `svgSource` adicional como fallback estático para impressão e cópia; ele não deve declarar uma segunda fonte principal.
+The authoring mode does not change the semantic type: keep `kind` as `sankey`, `sequence`, `timeline`, or another registered type. A Mermaid source uses `source.language: mermaid` and exactly one of `source.path` and `source.code`; do not combine it with `svgSource` or `htmlSource`. Authored HTML may declare an additional `svgSource` as a static fallback for print and copying; it must not declare a second primary source.
 
-O runtime Mermaid oferece uma viewport limitada por `presentation.height`, pan por arraste, zoom por botões ou Ctrl/⌘ + scroll, reset, tela cheia, uma rota de visualização inteira e uma legenda contextual obrigatória. Diagramas densos podem declarar `presentation.initialZoom` (0.5–4) e `presentation.initialPosition` (`center` ou `start`); `start` abre junto à origem do fluxo conforme a direção Mermaid. O zoom usa a proporção real da viewport para aproveitar tanto a largura quanto a altura disponíveis. Um compilador editorial em JavaScript deriva da fonte os papéis realmente usados, seguindo a fronteira de confiança e o IR do importador Mermaid do Diagram Design; `style`, `classDef` e `linkStyle` autorais são descartados antes da renderização. Use isso para modelos grandes sem reduzir o texto até ficar ilegível; `summary`, `data` e `declarativeAnalysis` continuam sendo a visão compacta para agentes e impressão degradada. A legenda fica fora da área de pan para permanecer legível no modo inline, na página dedicada, em tela cheia e na impressão.
+The Mermaid runtime provides a viewport constrained by `presentation.height`, drag panning, zoom through buttons or Ctrl/⌘ + scroll, reset, fullscreen, a full-view route, and a mandatory contextual legend. Dense diagrams may declare `presentation.initialZoom` (0.5–4) and `presentation.initialPosition` (`center` or `start`); `start` opens near the flow origin according to the Mermaid direction. Zoom uses the viewport's actual aspect ratio to make use of both available width and height. An editorial JavaScript compiler derives the roles actually used by the source, following the trust boundary and the Diagram Design Mermaid importer IR; authored `style`, `classDef`, and `linkStyle` are discarded before rendering. Use this for large models without shrinking text until it becomes unreadable; `summary`, `data`, and `declarativeAnalysis` remain the compact view for agents and degraded print output. The legend stays outside the pan area so it remains readable inline, on the dedicated page, in fullscreen, and in print.
 
-## Envelope de HTML autoral
+## Authored HTML envelope
 
-Crie o scaffold com:
+Create the scaffold with:
 
 ```text
 aurelius visual init publication-cost --site ./docs --kind sankey --format html
 ```
 
-O artefato é referenciado por um JSON em `diagrams/`:
+The artifact is referenced by a JSON file in `diagrams/`:
 
 ```json
 {
@@ -49,54 +49,54 @@ O artefato é referenciado por um JSON em `diagrams/`:
 }
 ```
 
-- `htmlSource` aponta para um documento HTML completo e local à raiz do site.
-- `summary` é texto autônomo: registra a conclusão ou estrutura que uma pessoa precisa entender sem renderizar o visual. Não descreva posições de caixas.
-- `data` preserva os valores e relações importantes em formato rastreável. Não precisa duplicar toda a marcação do HTML.
-- `presentation.width` e `presentation.height` declaram o quadro de autoria em pixels CSS. Escolha um quadro grande o bastante para rótulos legíveis; o leitor oferece overflow e visualização completa. Para um mapa denso, `initialZoom` pode abrir diretamente em escala de leitura e `initialPosition: "start"` mantém a entrada do fluxo visível.
-- `interactive` é `false` por padrão. Defina `true` somente quando o significado realmente melhora com interação e houver um estado completo sem JavaScript.
-- `svgSource` é opcional, mas recomendado para visuais importantes em PDF. O fallback precisa representar o mesmo estado completo do HTML. Para extração automática, marque exatamente um SVG com `data-aurelius-print-source="true"`, mantenha todos os estilos e variáveis usados dentro dele e preserve o contrato acessível; CSS declarado apenas no `<head>` não acompanha a cópia nem a impressão. Sem esse marcador ou um `svgSource`, o PDF usa a alternativa textual baseada em `summary`.
+- `htmlSource` points to a complete HTML document local to the site root.
+- `summary` is self-contained text: record the conclusion or structure a person needs to understand without rendering the visual. Do not describe box positions.
+- `data` preserves important values and relationships in a traceable format. It does not need to duplicate the complete HTML markup.
+- `presentation.width` and `presentation.height` declare the authored frame in CSS pixels. Choose a frame large enough for readable labels; the reader provides overflow and full view. For a dense map, `initialZoom` can open directly at a readable scale and `initialPosition: "start"` keeps the flow entry visible.
+- `interactive` is `false` by default. Set it to `true` only when interaction materially improves the meaning and a complete state exists without JavaScript.
+- `svgSource` is optional but recommended for important visuals in PDF. The fallback must represent the same complete state as the HTML. For automatic extraction, mark exactly one SVG with `data-aurelius-print-source="true"`, keep all styles and variables it uses inside it, and preserve the accessibility contract; CSS declared only in `<head>` does not travel with copying or printing. Without this marker or an `svgSource`, the PDF uses the text alternative based on `summary`.
 
-Não coloque o conteúdo de `htmlSource` em `data`, Markdown ou frontmatter. O build mantém o código visual isolado e publica apenas metadados e semântica na API.
+Do not put `htmlSource` content in `data`, Markdown, or frontmatter. The build keeps visual code isolated and publishes only metadata and semantics in the API.
 
-## Requisitos do HTML
+## HTML requirements
 
-O documento precisa ser autocontido e funcionar no isolamento do Aurelius:
+The document must be self-contained and work in Aurelius isolation:
 
-- Use `<!doctype html>`, `lang`, `<title>` e um único conteúdo principal. Declare CSS no próprio arquivo e mantenha o fundo claro; um site Aurelius não tem variante escura.
-- Prefira SVG inline para diagramas e gráficos. O SVG informativo precisa de `role="img"`, `aria-labelledby` que aponte para `<title>` e `<desc>`, `<title>` como primeiro filho e `<desc>` útil, com IDs exclusivos prefixados pelo slug. Quando ele for a fonte de impressão, inclua `data-aurelius-print-source="true"` e um `<style>` interno completo.
-- Não use `iframe`, `object`, `embed`, formulários, navegação automática, `base`, `meta refresh`, requisições de rede ou imagens remotas. Fontes remotas permitidas pelo build são uma melhoria opcional; sempre forneça uma pilha local legível.
-- Não tente alcançar `parent`, cookies, armazenamento, clipboard ou DOM externo. Scripts só podem operar dentro do artefato e exigem `interactive: true`.
-- O estado inicial e `prefers-reduced-motion: reduce` devem mostrar o conteúdo completo. Animação e hover não podem revelar fatos indispensáveis.
-- Declare os próprios tokens CSS de marca e fallbacks no arquivo: o iframe é isolado e não herda estilos do site. Não use uma fonte monoespaçada para todo o texto; reserve-a para comandos, IDs, valores e eixos compactos.
+- Use `<!doctype html>`, `lang`, `<title>`, and a single main content area. Declare CSS in the file itself and keep the background light; an Aurelius site has no dark variant.
+- Prefer inline SVG for diagrams and charts. An informative SVG needs `role="img"`, `aria-labelledby` pointing to `<title>` and `<desc>`, `<title>` as its first child, and a useful `<desc>`, with IDs unique and prefixed by the slug. When it is the print source, include `data-aurelius-print-source="true"` and a complete internal `<style>`.
+- Do not use `iframe`, `object`, `embed`, forms, automatic navigation, `base`, `meta refresh`, network requests, or remote images. Remote fonts allowed by the build are an optional enhancement; always provide a readable local stack.
+- Do not attempt to reach `parent`, cookies, storage, the clipboard, or the external DOM. Scripts may operate only inside the artifact and require `interactive: true`.
+- The initial state and `prefers-reduced-motion: reduce` must show the complete content. Animation and hover must not reveal indispensable facts.
+- Declare the brand CSS tokens and fallbacks in the file itself: the iframe is isolated and does not inherit the host site's styles. Do not use a monospaced font for all text; reserve it for commands, IDs, values, and compact axes.
 
-O isolamento é parte do contrato, não uma técnica de layout. O artefato deve continuar correto quando aberto sozinho e não deve depender dos estilos ou scripts do site hospedeiro.
+Isolation is part of the contract, not a layout technique. The artifact must remain correct when opened on its own and must not depend on the host site's styles or scripts.
 
-## Legibilidade, escala e navegação
+## Legibility, scale, and navigation
 
-- Projete no quadro declarado em `presentation`; use um `viewBox` coerente e texto com tamanho adequado ao destino. Em um visual largo, preserve a escala de leitura e deixe o container rolar horizontalmente em vez de reduzir rótulos até ficarem ilegíveis.
-- Mantenha títulos humanos curtos, rótulos diretamente junto aos dados e contraste suficiente sobre o papel claro. Use cor como reforço, nunca como código único.
-- Para mapas grandes, ofereça hierarquia visual e pontos de orientação. O full view deve permitir entender o todo; detalhes densos devem continuar legíveis com zoom ou overflow.
-- Em interação de canvas, scroll comum move a superfície, arrastar move a visão e o modificador indicado controla zoom. Clicar em um item seleciona ou mostra detalhe; não deve aplicar zoom inesperado.
-- Divida uma explicação quando o excesso de elementos impede a leitura. Um grande mapa de processo pode ser legítimo, mas ainda precisa de agrupamentos, rótulos de fase e uma visão geral sem sobreposições.
+- Design within the frame declared in `presentation`; use a coherent `viewBox` and text sized appropriately for the destination. In a wide visual, preserve reading scale and let the container scroll horizontally instead of shrinking labels until they become illegible.
+- Keep human titles short, labels next to their data, and contrast sufficient on the light paper. Use color as reinforcement, never as the only code.
+- For large maps, provide visual hierarchy and orientation points. Full view must make the whole understandable; dense details must remain legible with zoom or overflow.
+- In Canvas interaction, ordinary scrolling moves the surface, dragging moves the view, and the indicated modifier controls zoom. Clicking an item selects it or shows detail; it must not apply unexpected zoom.
+- Split an explanation when too many elements prevent reading. A large process map may be legitimate, but it still needs grouping, phase labels, and an overview without overlaps.
 
-## Impressão, cópia e alternativa textual
+## Print, copying, and text alternative
 
-Considere quatro saídas antes de concluir:
+Consider four outputs before finishing:
 
-1. A página inline mostra o visual em escala útil e dá acesso à visualização completa.
-2. A visualização completa preserva o quadro autoral e os controles não cobrem conteúdo.
-3. A impressão usa `svgSource` quando disponível; sem ele, deve permanecer uma alternativa textual com `summary`, título e fonte. Não aceite iframe vazio ou conteúdo cortado como PDF válido.
-4. A cópia oferece a representação editável relevante: HTML para o artefato autoral e SVG quando houver fallback. O Markdown e a API recebem título, resumo, dados e referência ao artefato — nunca apenas `{{diagram:id}}` sem contexto.
+1. The inline page shows the visual at a useful scale and provides access to full view.
+2. Full view preserves the authored frame and controls do not cover content.
+3. Print uses `svgSource` when available; without it, a text alternative with `summary`, title, and source must remain. Do not accept an empty iframe or clipped content as a valid PDF.
+4. Copying provides the relevant editable representation: HTML for an authored artifact and SVG when a fallback exists. Markdown and the API receive the title, summary, data, and artifact reference—never only `{{diagram:id}}` without context.
 
-## Qualidade com ou sem `diagram-design`
+## Quality with or without `diagram-design`
 
-Se a skill `diagram-design` estiver disponível, escolha primeiro o padrão semântico e o tipo visual, leia apenas a referência daquele tipo e adapte uma variante clara aos tokens do site. Use os verificadores da skill quando acessíveis. Aurelius não depende dessa skill e não deve copiar seus assets durante o build.
+If the `diagram-design` skill is available, first choose the semantic pattern and visual type, read only that type's reference, and adapt a light variant to the site's tokens. Use the skill's validators when accessible. Aurelius does not depend on this skill and must not copy its assets during the build.
 
-Sem a skill, preserve os mesmos resultados essenciais: tipo adequado ao problema, pouca decoração, hierarquia explícita, conectores rastreáveis, legenda fora da área de dados, no máximo dois focos visuais e sem sombras ou efeitos que reduzam contraste. Para diagramas muito densos, priorize a rastreabilidade de cada linha e quebre em overview + detalhes quando necessário.
+Without the skill, preserve the same essential results: an appropriate type, little decoration, explicit hierarchy, traceable connectors, a legend outside the data area, at most two visual focal points, and no shadows or effects that reduce contrast. For very dense diagrams, prioritize traceability of every line and split the subject into overview plus detail pages.
 
-## Verificação
+## Verification
 
-Depois de editar fontes:
+After editing sources:
 
 ```text
 aurelius check --site ./docs
@@ -104,4 +104,4 @@ aurelius build --site ./docs
 aurelius dev --site ./docs
 ```
 
-No navegador, verifique a página que incorpora o visual e sua rota de full view. Teste largura desktop e estreita, zoom do navegador, navegação por teclado, foco visível, copiar HTML/SVG, ausência de scroll preso, fontes carregadas e `prefers-reduced-motion`. Abra a prévia de impressão e confirme que título, resumo, fallback e blocos de código não ficam cortados ou divididos de forma ilegível.
+In the browser, verify the page that embeds the visual and its full-view route. Test desktop and narrow widths, browser zoom, keyboard navigation, visible focus, copying HTML/SVG, absence of trapped scrolling, loaded fonts, and `prefers-reduced-motion`. Open print preview and confirm that the title, summary, fallback, and code blocks are not clipped or split into illegible fragments.

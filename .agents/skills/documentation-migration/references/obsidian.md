@@ -1,66 +1,66 @@
-# Migrar um vault Obsidian
+# Migrate an Obsidian vault
 
-Esta referência orienta a migração de um vault para Markdown organizado ou para um site Aurelius. Ela se baseia nas skills oficiais do projeto `kepano/obsidian-skills`: [obsidian-markdown](https://github.com/kepano/obsidian-skills/tree/main/skills/obsidian-markdown), [obsidian-bases](https://github.com/kepano/obsidian-skills/tree/main/skills/obsidian-bases) e [json-canvas](https://github.com/kepano/obsidian-skills/tree/main/skills/json-canvas). Consulte as referências upstream quando a tarefa for editar o vault, e não só migrá-lo.
+This reference guides the migration of a vault to organized Markdown or an Aurelius site. It is based on the official skills from `kepano/obsidian-skills`: [obsidian-markdown](https://github.com/kepano/obsidian-skills/tree/main/skills/obsidian-markdown), [obsidian-bases](https://github.com/kepano/obsidian-skills/tree/main/skills/obsidian-bases), and [json-canvas](https://github.com/kepano/obsidian-skills/tree/main/skills/json-canvas). Consult the upstream references when the task is to edit the vault, rather than only migrate it.
 
-## Inventário antes da cópia
+## Inventory before copying
 
-Inspecione o vault sem alterá-lo e produza uma tabela de contagens e exceções:
+Inspect the vault without changing it and produce a table of counts and exceptions:
 
-| Objeto | Procure por | Decisão a registrar |
-| --- | --- | --- |
-| Notas | `*.md` | destino, `id`, status de frontmatter e links |
-| Links internos | `[[nota]]`, `[[nota#seção]]`, `[[nota|rótulo]]`, `[[nota#^bloco]]` | alvo resolvido, âncora preservada ou exceção |
-| Embeds | `![[...]]` | conteúdo incorporado, ativo, ou referência a traduzir |
-| Propriedades | frontmatter YAML | campos preservados, renomeados ou descartados com motivo |
-| Tags | `#tag` e `tags:` | normalização e vocabulário de destino |
-| Anexos | imagens, PDF, áudio, vídeo e outros arquivos | caminho, hash opcional, destino e referências |
-| Canvas | `*.canvas` | tradução semântica, preservação como fonte ou exceção |
-| Bases | `*.base` | view estática, índice narrativo, implementação própria ou não suportado |
-| Configuração | `.obsidian/` e plugins | preservar como contexto/arquivo, nunca confundir com conteúdo publicado |
+| Object | Look for | Decision to record |
+|---|---|---|
+| Notes | `*.md` | destination, `id`, frontmatter status, and links |
+| Internal links | `[[note]]`, `[[note#section]]`, `[[note|label]]`, `[[note#^block]]` | resolved target, preserved anchor, or exception |
+| Embeds | `![[...]]` | transcluded content, asset, or reference to translate |
+| Properties | YAML frontmatter | fields preserved, renamed, or discarded with a reason |
+| Tags | `#tag` and `tags:` | normalized vocabulary and naming |
+| Attachments | images, PDF, audio, video, and other files | path, optional hash, destination, and references |
+| Canvas | `*.canvas` | semantic translation, source preservation, or exception |
+| Bases | `*.base` | static view, narrative index, custom implementation, or unsupported item |
+| Configuration | `.obsidian/` and plugins | preserve as context/files; never confuse with published content |
 
-Inclua no relatório links ambíguos, notas de mesmo nome, embeds quebrados, frontmatter inválido, arquivos sem referência, arquivos referenciados ausentes e sintaxe de plugins. A ausência de uma referência não autoriza apagar um ativo: pode ser conteúdo intencionalmente independente.
+Include ambiguous links, notes with the same name, broken embeds, invalid frontmatter, unreferenced files, missing referenced files, and plugin syntax in the report. The absence of a reference does not authorize deleting an asset: it may be intentional independent content.
 
-## Markdown e propriedades
+## Markdown and properties
 
-Obsidian estende Markdown com wikilinks, embeds, callouts, propriedades, comentários e tags. Mantenha o texto CommonMark como base e faça uma conversão explícita para cada extensão.
+Obsidian extends Markdown with wikilinks, embeds, callouts, properties, comments, and tags. Keep CommonMark as the foundation and make an explicit conversion decision for each extension.
 
-| Origem Obsidian | Destino Aurelius | Regra |
-| --- | --- | --- |
-| `[[Nota]]` | `[Nota](doc:nota-id)` | só após resolver `Nota` para o `id` de destino |
-| `[[Nota|Rótulo]]` | `[Rótulo](doc:nota-id)` | preserve o texto apresentado |
-| `[[Nota#Seção]]` | âncora equivalente, quando o destino tiver slug estável | verifique a âncora gerada; se não existir, registre exceção |
-| `[[Nota#^bloco]]` | link para seção ou conteúdo transposto | Aurelius não oferece compatibilidade automática com IDs de bloco Obsidian |
-| `![[imagem.png]]` | `asset:imagem.png` ou imagem Markdown publicada | copie o ativo e reescreva as referências |
-| `![[Nota]]` | conteúdo transposto ou link explícito | não simule inclusão dinâmica sem suporte do destino |
-| callout `> [!tipo]` | blockquote Markdown ou padrão editorial escolhido | preserve o significado e o título, não dependa da aparência Obsidian |
-| propriedades YAML | frontmatter Aurelius | preencha os campos obrigatórios do Aurelius de forma deliberada |
-| `tags`/`#tag` | `tags` | normalize grafia, hierarquia e sinônimos antes da importação |
+| Obsidian source | Aurelius target | Rule |
+|---|---|---|
+| `[[Note]]` | `[Note](doc:note-id)` | only after resolving `Note` to the destination `id` |
+| `[[Note\|Label]]` | `[Label](doc:note-id)` | preserve the displayed text |
+| `[[Note#Section]]` | equivalent anchor when the destination has a stable slug | verify the generated anchor; if it does not exist, record an exception |
+| `[[Note#^block]]` | link to a section or transposed content | Aurelius does not provide automatic compatibility with Obsidian block IDs |
+| `![[image.png]]` | `asset:image.png` or published Markdown image | copy the asset and rewrite references |
+| `![[Note]]` | transposed content or explicit link | do not simulate dynamic inclusion without target support |
+| callout `> [!type]` | Markdown blockquote or chosen editorial pattern | preserve meaning and title; do not depend on Obsidian appearance |
+| YAML properties | Aurelius frontmatter | deliberately fill the target's required Aurelius fields |
+| `tags`/`#tag` | `tags` | normalize spelling, hierarchy, and synonyms before import |
 
-Propriedades como `aliases` e `cssclasses` são semântica do Obsidian; não as trate como recursos nativos do destino. Preserve aliases em um mapa de redirecionamento ou relatório quando eles forem necessários para encontrar conteúdo antigo. Preserve `cssclasses` apenas se houver uma decisão de estilo equivalente.
+Properties such as `aliases` and `cssclasses` are Obsidian semantics; do not treat them as native target features. Preserve aliases in a redirect map or report when they are needed to find old content. Preserve `cssclasses` only when there is an equivalent style decision.
 
-Não converta URLs externas em `doc:` e não transforme wikilinks não resolvidos em links falsos. Um bom resultado mantém uma lista rastreável de cada link que não pôde ser resolvido.
+Do not convert external URLs to `doc:` links, and do not turn unresolved wikilinks into false links. A good result keeps a traceable list of every link that could not be resolved.
 
 ## Canvas JSON
 
-Um `.canvas` contém arrays `nodes` e `edges`; cada edge referencia os IDs dos nós de origem e destino. Antes de converter, valide JSON, unicidade de IDs e integridade de `fromNode`/`toNode`. Inventarie nós `text`, `file`, `link` e `group`, além de rótulos e direções das arestas.
+An `.canvas` file contains `nodes` and `edges` arrays; each edge references the IDs of its source and target nodes. Before converting, validate JSON, ID uniqueness, and `fromNode`/`toNode` integrity. Inventory `text`, `file`, `link`, and `group` nodes, along with labels and edge directions.
 
-Para Aurelius, use uma fonte de diagrama JSON nativa sempre que ela represente bem o assunto. Preserve a relação como dado estruturado, um `summary` que seja compreensível sem a imagem e `sourceRefs` para a fonte que sustenta a afirmação. Grupos viram zonas quando fizer sentido; nós de arquivo podem virar links para os documentos migrados. Um Canvas cujo layout é puramente espacial pode permanecer como arquivo-fonte acompanhado de uma explicação textual, em vez de ser convertido em uma imagem sem acessibilidade.
+For Aurelius, use a native JSON diagram source whenever it represents the subject well. Preserve relationships as structured data, a `summary` understandable without the image, and `sourceRefs` for the source supporting the claim. Groups become zones when appropriate; file nodes may become links to migrated documents. A Canvas whose layout is purely spatial may remain as a source file accompanied by a textual explanation instead of becoming an inaccessible image.
 
-## Bases e funções de plugin
+## Bases and plugin features
 
-Um `.base` é YAML que define filtros, fórmulas, propriedades e views. A view pode ser tabela, cards, lista ou mapa. Ela é uma consulta sobre notas, portanto deve ser avaliada como comportamento, não copiada como se fosse uma página estática.
+An `.base` file is YAML defining filters, formulas, properties, and views. A view may be a table, cards, list, or map. It is a query over notes and must be evaluated as behavior, not copied as if it were a static page.
 
-Para cada Base, registre os filtros, propriedades necessárias, fórmulas, ordenação, agrupamentos, limite e summaries. Se exportar uma tabela estática, declare a data de corte e a regra que a gerou. Se alguma nota não tem a propriedade esperada, não esconda o erro: mantenha a condição de ausência na regra ou no relatório.
+For each Base, record filters, required properties, formulas, sorting, grouping, limit, and summaries. If exporting a static table, declare the cutoff date and the rule that generated it. If a note lacks an expected property, do not hide the error: keep the absence condition in the rule or report.
 
-Consultas e sintaxes de plugins comunitários não fazem parte do formato Markdown padrão do Obsidian. Detecte blocos de código, frontmatter ou comentários que dependam deles; preserve a fonte e peça uma decisão de produto antes de reimplementar, congelar como resultado estático ou excluir do escopo.
+Queries and community-plugin syntax are not part of standard Markdown or the Obsidian format. Detect code blocks, frontmatter, or comments that depend on them; preserve the source and request a product decision before reimplementing, freezing as a static result, or excluding it from scope.
 
-## Validação da migração
+## Migration validation
 
-Faça pelo menos estas verificações antes de declarar a migração concluída:
+Perform at least these checks before declaring the migration complete:
 
-1. O número de notas, anexos, Canvas e Bases tem destino ou exceção registrada.
-2. Todo link interno convertido resolve para o destino esperado; links e embeds que não resolvem aparecem no relatório.
-3. Todo ativo referenciado foi copiado uma vez, está acessível no caminho publicado e não perdeu o vínculo no conteúdo.
-4. O frontmatter resultante é válido e atende ao contrato do destino; identifique campos que foram transformados ou descartados.
-5. Diagramas preservam o significado sem depender do app Obsidian; Bases não são apresentadas como interativas quando a entrega é uma exportação estática.
-6. No Aurelius, execute `aurelius check --site <site>` e, se houver build solicitado, confira as páginas Markdown e a API gerada para os documentos afetados.
+1. Every note, attachment, Canvas, and Base has a destination or a recorded exception.
+2. Every converted internal link resolves to the expected destination; unresolved links and embeds appear in the report.
+3. Every referenced asset was copied once, is available at the published path, and retained its content relationship.
+4. Resulting frontmatter is valid and satisfies the target contract; identify fields that were transformed or discarded.
+5. Diagrams preserve meaning without depending on the Obsidian app; Bases are not presented as interactive when the delivery is a static export.
+6. In Aurelius, run `aurelius check --site <site>` and, when a build was requested, inspect the generated Markdown pages and API for affected documents.

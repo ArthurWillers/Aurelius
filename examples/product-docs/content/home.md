@@ -24,7 +24,7 @@ The [Aurelius repository on GitHub](https://github.com/ArthurWillers/Aurelius) c
 Install Aurelius as a versioned GitHub development dependency. The lockfile records the resolved commit, so local work and CI use the same release:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.4
+npm install --save-dev github:ArthurWillers/Aurelius#v0.4.5
 npx --no-install aurelius init docs --title "Product documentation" --logo brand.svg
 npx --no-install aurelius check --site docs
 npx --no-install aurelius build --site docs

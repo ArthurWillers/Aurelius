@@ -18,14 +18,14 @@ Read [the content contract](references/content-contract.md) before adding a docu
 Prefer explicit commands:
 
 ```text
-aurelius init <pasta> [--title <titulo>] [--logo <marca.svg|marca.png>]
-aurelius visual init <id> --site <pasta> --kind <tipo> [--format mermaid|html|svg]
-aurelius check --site <pasta>
-aurelius build --site <pasta>
-aurelius dev --site <pasta> [--port 4173]
+aurelius init <path> [--title <title>] [--logo <logo.svg|logo.png>]
+aurelius visual init <id> --site <path> --kind <kind> [--format mermaid|html|svg]
+aurelius check --site <path>
+aurelius build --site <path>
+aurelius dev --site <path> [--port 4173]
 ```
 
-When working in the Aurelius source repository, use `npm run aurelius -- <comando>`. In a consumer project, use its locally installed `aurelius` executable. Do not assume Codex, a plugin manager, or a particular package runner.
+When working in the Aurelius source repository, use `npm run aurelius -- <command>`. In a consumer project, use its locally installed `aurelius` executable. Do not assume Codex, a plugin manager, or a particular package runner.
 
 ## Write with provenance
 
@@ -49,4 +49,4 @@ For an Obsidian migration, translate the Canvas into the native JSON envelope: p
 
 ## Validate and build
 
-Run `aurelius check --site <pasta>` after source edits. Run `aurelius build --site <pasta>` only when a generated projection is requested; it recreates the configured dedicated output directory and rejects overlap with site sources. For agent-facing changes, confirm that `llms.txt`, `llms-full.txt`, `api/manifest.json`, `markdown/{id}.md`, and the affected JSON document were produced. For a visual change, inspect its inline and full views in a browser at desktop and narrow widths, test keyboard access and copy actions, and inspect print preview; a successful build alone is not visual verification.
+Run `aurelius check --site <path>` after source edits. Run `aurelius build --site <path>` only when a generated projection is requested; it recreates the configured dedicated output directory and rejects overlap with site sources. For agent-facing changes, confirm that `llms.txt`, `llms-full.txt`, `api/manifest.json`, `markdown/{id}.md`, and the affected JSON document were produced. For a visual change, inspect its inline and full views in a browser at desktop and narrow widths, test keyboard access and copy actions, and inspect print preview; a successful build alone is not visual verification.

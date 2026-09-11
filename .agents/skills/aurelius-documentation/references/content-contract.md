@@ -1,81 +1,81 @@
-# Contrato de conteúdo Aurelius
+# Aurelius Content Contract
 
-Cada arquivo em `content/` é Markdown com frontmatter simples. Os campos obrigatórios são `id`, `title`, `description`, `type`, `status` e `visibility`. Use listas separadas por vírgula para `tags`, `related`, `source_refs` e, quando necessário, `authors`. `updated` aceita uma data ou versão editorial livre.
+Every file in `content/` is Markdown with simple frontmatter. The required fields are `id`, `title`, `description`, `type`, `status`, and `visibility`. Use comma-separated lists for `tags`, `related`, `source_refs`, and, when needed, `authors`. `updated` accepts a date or a free-form editorial version.
 
 ```markdown
 ---
 id: authentication
-title: Autenticação
-description: Como o sistema identifica pessoas e decide acesso.
+title: Authentication
+description: How the system identifies people and decides access.
 type: architecture
 status: observed
 visibility: internal
 tags: security, identity
 related: authorization, audit
 source_refs: ../app/AuthService.php, ../routes/web.php
-authors: Plataforma, Segurança
+authors: Platform, Security
 updated: 2026-09-08
 diagram: authentication-flow
 ---
 ```
 
-- `id` é único e estável; `home` é a página inicial.
-- `related` só pode apontar para outro `id` existente.
-- `source_refs` é resolvido a partir da raiz do site e deve existir quando declarado. Caminhos com `..` podem citar fontes locais fora da pasta do site; eles permanecem apenas como proveniência textual na API e não são copiados para `dist`. Para uma fonte técnica externa recuperável por leitores, use uma URL pública `https://` estável.
-- `visibility` é metadado descritivo, não controle de acesso. Todo arquivo em `content/` entra em HTML, busca, API, `llms.txt` e `llms-full.txt`; não coloque segredos no site e proteja a publicação ou separe as entradas quando houver conteúdo interno.
-- O subconjunto Markdown inclui títulos H1–H4, parágrafos, ênfase, links, código inline e cercado, tabelas, citações, callouts, regras e listas planas. Títulos dentro de cercas de código não criam seções nem âncoras. Prefira equivalentes simples para extensões fora desse contrato.
-- `diagram` aponta para o `id` de uma fonte JSON em `diagrams/`.
-- `{{diagram:id}}` inclui qualquer visual que não seja Canvas; `{{canvas:id}}` inclui um Canvas.
-- `asset:arquivo.ext` aponta para `assets/arquivo.ext`, que é copiado para a saída.
+- `id` is unique and stable; `home` is the home page.
+- `related` may point only to another existing `id`.
+- `source_refs` is resolved from the site root and must exist when declared. Paths containing `..` may cite local sources outside the site directory; they remain textual provenance in the API and are not copied to `dist`. For an external technical source that readers can retrieve, use a stable public `https://` URL.
+- `visibility` is descriptive metadata, not access control. Every file in `content/` is emitted to HTML, search, the API, `llms.txt`, and `llms-full.txt`; do not put secrets in the site, and protect the publication or separate the inputs when content is internal.
+- The supported Markdown subset includes H1–H4 headings, paragraphs, emphasis, links, inline and fenced code, tables, blockquotes, callouts, rules, and flat lists. Headings inside code fences do not create sections or anchors. Prefer simple equivalents for extensions outside this contract.
+- `diagram` points to the `id` of a JSON source in `diagrams/`.
+- `{{diagram:id}}` includes any visual that is not a Canvas; `{{canvas:id}}` includes a Canvas.
+- `asset:file.ext` points to `assets/file.ext`, which is copied to the output.
 
-## Arquitetura legível
+## Readable architecture
 
-Arquiteturas são declarativas: descreva nós, zonas e relações; o Aurelius escolhe portas distintas e desenha conectores ortogonais com cantos arredondados. Não use coordenadas SVG em `edges.path`. Mantenha no máximo 9 nós, 12 relações e 3 zonas; quando o modelo for maior, publique uma visão geral e páginas de detalhe.
+Architectures are declarative: describe nodes, zones, and relationships; Aurelius chooses distinct ports and draws orthogonal connectors with rounded corners. Do not use SVG coordinates in `edges.path`. Keep no more than 9 nodes, 12 relationships, and 3 zones; when the model is larger, publish an overview and detail pages.
 
 ```json
 {
   "id": "runtime-overview",
   "kind": "architecture",
-  "title": "Caminho de publicação",
-  "description": "O build recebe Markdown, produz uma projeção estática e disponibiliza contratos para agentes.",
+  "title": "Publication path",
+  "description": "The build receives Markdown, produces a static projection, and exposes contracts for agents.",
   "zones": [
     { "label": "BUILD", "x": 40, "y": 40, "width": 640, "height": 240 }
   ],
   "nodes": [
-    { "id": "content", "kind": "input", "tag": "FONTE", "label": "Markdown e JSON", "detail": "versionados", "x": 80, "y": 120, "width": 180, "height": 100 },
-    { "id": "build", "kind": "focal", "tag": "BUILD", "label": "Aurelius", "detail": "projeção estática", "x": 400, "y": 120, "width": 180, "height": 100 }
+    { "id": "content", "kind": "input", "tag": "SOURCE", "label": "Markdown and JSON", "detail": "versioned", "x": 80, "y": 120, "width": 180, "height": 100 },
+    { "id": "build", "kind": "focal", "tag": "BUILD", "label": "Aurelius", "detail": "static projection", "x": 400, "y": 120, "width": 180, "height": 100 }
   ],
   "edges": [
-    { "id": "compile", "from": "content", "to": "build", "label": "COMPILA", "tone": "accent" }
+    { "id": "compile", "from": "content", "to": "build", "label": "COMPILE", "tone": "accent" }
   ]
 }
 ```
 
-Use a grade de 4px para `x`, `y`, `width` e `height`; não sobreponha nós. `label` é uma frase humana curta, `detail` contém o dado técnico e `tag` identifica a categoria. O SVG resultante inclui título e descrição para leitores de tela, uma legenda construída apenas com os tipos realmente usados e uma ação para copiar o vetor na página.
+Use a 4px grid for `x`, `y`, `width`, and `height`; do not overlap nodes. `label` is a short human phrase, `detail` contains the technical data, and `tag` identifies the category. The resulting SVG includes a title and description for screen readers, a legend built only from the types actually used, and an action to copy the vector on the page.
 
-O build produz `markdown/{id}.md`, `api/documents/{id}.json`, `api/graph.json`, `api/search.json`, `api/manifest.json`, schemas JSON, `llms.txt` e `llms-full.txt`. Esses arquivos são a interface preferida para agentes; `dist/` nunca é a fonte de edição.
+The build produces `markdown/{id}.md`, `api/documents/{id}.json`, `api/graph.json`, `api/search.json`, `api/manifest.json`, JSON schemas, `llms.txt`, and `llms-full.txt`. These files are the preferred interface for agents; `dist/` is never an editing source.
 
-## Fontes visuais
+## Visual sources
 
-Um envelope em `diagrams/` pode usar Mermaid declarativo, o renderer JSON nativo, um `svgSource` acessível ou um `htmlSource` autoral isolado. Mermaid é a primeira opção para UML, decisões, fluxogramas, sequência, estados, ER, Gantt, jornadas e gráficos que sua gramática represente:
+An envelope in `diagrams/` may use declarative Mermaid, the native JSON renderer, an accessible `svgSource`, or an isolated authored `htmlSource`. Mermaid is the first option for UML, decisions, flowcharts, sequence diagrams, state diagrams, ER diagrams, Gantt charts, journeys, and charts that its grammar can represent:
 
 ```json
 {
   "id": "approval-flow",
   "kind": "flowchart",
-  "title": "Fluxo de aprovação",
-  "description": "Uma solicitação aprovada é publicada; uma rejeitada volta para revisão.",
+  "title": "Approval flow",
+  "description": "An approved request is published; a rejected request returns for revision.",
   "source": {
     "language": "mermaid",
     "path": "diagrams/sources/approval-flow.mmd"
   },
-  "summary": "A aprovação publica a solicitação. A rejeição devolve o item ao autor para revisão.",
+  "summary": "Approval publishes the request. Rejection returns the item to its author for revision.",
   "data": { "outcomes": ["published", "revision"] }
 }
 ```
 
-Use exatamente um de `source.path` (`.mmd` ou `.mermaid`) e `source.code`. O `check` executa o parser Mermaid e bloqueia diretivas de configuração, links e callbacks; o `build` aplica os tokens claros do site e empacota o runtime local. Em todos os modos, mantenha `id`, `kind`, `title`, `description`, um `summary` autônomo quando o visual carregar informação relevante, `sourceRefs` e `data` semântico quando houver valores ou relações que agentes devam consultar.
+Use exactly one of `source.path` (`.mmd` or `.mermaid`) and `source.code`. `check` runs the Mermaid parser and blocks configuration directives, links, and callbacks; `build` applies the site's light tokens and packages the local runtime. In every mode, keep `id`, `kind`, `title`, `description`, a self-contained `summary` when the visual carries relevant information, `sourceRefs`, and semantic `data` when agents should query values or relationships.
 
-O SVG precisa declarar `viewBox`, `role="img"`, `aria-labelledby`, `<title>` e `<desc>`; referências locais como `url(#seta)` são aceitas quando o ID existe, enquanto conteúdo executável, externo ou ambíguo é rejeitado. O HTML autoral precisa ser um documento completo, claro, autocontido e funcionar sem acesso ao DOM do site; scripts exigem `interactive: true`, e o estado completo precisa permanecer disponível sem JavaScript. Use `svgSource` como fallback estático de um HTML quando a qualidade de impressão for importante ou marque um SVG inline autocontido com `data-aurelius-print-source="true"`.
+The SVG must declare `viewBox`, `role="img"`, `aria-labelledby`, `<title>`, and `<desc>`; local references such as `url(#arrow)` are accepted when the ID exists, while executable, external, or ambiguous content is rejected. Authored HTML must be a complete, clear, self-contained document that works without access to the site's DOM; scripts require `interactive: true`, and the complete state must remain available without JavaScript. Use `svgSource` as a static fallback for an HTML visual when print quality matters, or mark a self-contained inline SVG with `data-aurelius-print-source="true"`.
 
-Leia [o contrato de autoria visual](html-visuals.md) para escolher o modo, preencher `presentation`, preservar legibilidade responsiva, oferecer cópia e validar a visualização completa e a impressão. O build publica metadados sem duplicar payloads privados de SVG ou HTML na API.
+Read [the visual authoring contract](html-visuals.md) to choose the mode, fill in `presentation`, preserve responsive legibility, offer copy actions, and validate the full view and print output. The build publishes metadata without duplicating private SVG or HTML payloads in the API.

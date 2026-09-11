@@ -126,7 +126,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.4" },
+        framework: { name: "Aurelius", version: "0.4.5" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",

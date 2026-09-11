@@ -110,13 +110,13 @@ export function normalizedConfig(config) {
   const normalized = {
     language: "en", siteTitle: "Documentation",
     siteDescription: "Static documentation for people and agents.",
-    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.4" },
+    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.5" },
     navigation: { primary: ["home"], sections: [] }, repository: null, ...config,
     brand: {
       title: "Documentation", kicker: "knowledge base", name: config.siteTitle || "Documentation",
       logoAlt: "Documentation logo", ...(config.brand || {}),
     },
-    framework: { name: "Aurelius", version: "0.4.4", ...(config.framework || {}) },
+    framework: { name: "Aurelius", version: "0.4.5", ...(config.framework || {}) },
     colors: { ...starterColors, ...(config.colors || {}) },
   };
   normalized.navigation = normalizeNavigation(config.navigation || normalized.navigation, normalized.language);
