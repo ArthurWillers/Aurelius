@@ -60,7 +60,7 @@ test("database schemas keep FK connections quiet by default while anchoring them
   assert.match(svg, /<path d="M380 128/, "the connector starts at the primary-key row");
   assert.match(svg, /L632 120/, "a diagonal waypoint becomes right-angle segments");
   assert.doesNotMatch(svg, /L480 120 L640 396/, "the connector never jumps diagonally into the FK row");
-  assert.doesNotMatch(svg, /marker-end="url\(#editorial-arrow\)"/, "FK connectors do not duplicate direction with arrowheads");
+  assert.match(svg, /marker-end="url\(#editorial-arrow\)"/, "FK connectors retain a directional arrowhead");
   assert.equal((svg.match(/height="16"/g) || []).length, 0, "FK connectors do not repeat labels or cardinalities by default");
 });
 

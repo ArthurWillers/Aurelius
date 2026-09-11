@@ -53,7 +53,7 @@ For a Mermaid `er` or `db-schema` diagram, `layout` is an optional, agent-editab
 - A relationship is matched by `from`, `to`, and, when needed, `label`. `fromPort` and `toPort` can select an edge and a specific field row. When two relations use the same field row, `fieldOffset` separates their attachment points by up to 8px in either direction.
 - `waypoints` are the intermediate points only: the renderer always adds the configured ports as the first and last points and draws rounded orthogonal elbows.
 - `labelPlacement` and `cardinalityPlacement` give labels explicit masked positions. Keep a visible 6–10px gap from the connector and do not place a mask on a table.
-- In `db-schema`, the FK row already identifies the relationship, so connections deliberately render as undirected column-to-column lines without repeated FK labels or cardinalities. Set `showLabel` and/or `showCardinality` to `true` on a relationship only when that annotation adds non-duplicative information.
+- In `db-schema`, the FK row already identifies the relationship, so connections retain arrowheads but omit repeated FK labels and cardinalities by default. Set `showLabel` and/or `showCardinality` to `true` on a relationship only when that annotation adds non-duplicative information.
 - `bridges` declare which relation visually passes over another at an unavoidable crossing. Prefer separate routes; a bridge is a fallback, not a substitute for overlapping paths.
 
 Use a 4px grid, distinct ports, and at least 12px between parallel routes. Do not route a connector behind a table that is not one of its endpoints. If a logical schema needs more than five tables or six foreign-key relations, split it into focused diagrams instead of relying on increasingly complex routes.

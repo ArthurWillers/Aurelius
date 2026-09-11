@@ -416,7 +416,7 @@
     });
     var body = "";
     var isDatabaseSchema = kind === "db-schema";
-    routes.forEach(function (route) { body += routeConnector(route.points, { marker: !isDatabaseSchema, dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
+    routes.forEach(function (route) { body += routeConnector(route.points, { marker: true, dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
     routes.forEach(function (route) { (route.layout.bridges || []).forEach(function (item) { body += bridge(item.x, item.y, item.orientation === "horizontal", C.muted); }); });
     routes.forEach(function (route, routeIndex) { if ((route.layout.bridges || []).length) return; routes.slice(0, routeIndex).forEach(function (previous) { crossingBetween(route.points, previous.points).forEach(function (crossing) { body += bridge(crossing.x, crossing.y, crossing.horizontal, C.muted); }); }); });
     routes.forEach(function (route) {
