@@ -147,6 +147,7 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.match(html, /Semantic source: `diagrams\/system\.json`/);
   assert.match(html, /@media print[\s\S]*--paper: #fff/);
   assert.match(html, /class="site-sidebar"/);
+  assert.match(html, /class="site-sidebar-drawer" data-nav-drawer open/);
   assert.match(html, /class="repo-link" href="https:\/\/git\.example\.test\/platform\/docs"/);
   assert.match(html, /class="nav-section" data-nav-group="section-0" open>/);
   assert.match(html, /class="nav-folder" data-nav-group="section-0-1"><summary>Guides<\/summary>/);

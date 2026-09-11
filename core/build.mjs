@@ -2191,7 +2191,8 @@ function renderSiteSidebar(currentDocument, documents, config) {
       (containsCurrent(items) ? " open" : "") + '><summary>' + escapeHtml(section.label) +
       '</summary><div class="nav-children">' + links + "</div></details>" : "";
   }).join("");
-  return '<aside class="site-sidebar"><nav aria-label="' + escapeAttribute(copy.documentationNavigation) + '">' + sections + '</nav></aside>';
+  return '<aside class="site-sidebar"><details class="site-sidebar-drawer" data-nav-drawer open><summary>' +
+    escapeHtml(copy.documentationNavigation) + '</summary><nav aria-label="' + escapeAttribute(copy.documentationNavigation) + '">' + sections + '</nav></details></aside>';
 }
 
 function renderHtmlDocument(document, documents, config, context) {
