@@ -168,8 +168,164 @@
   }
   function parseER(source) { var fields = {}, relationships = []; source.split(/\n/).forEach(function (line) { var rel = line.match(/^\s*([A-Z][\w]*)\s+([|o}{]+)--([|o}{]+)\s+([A-Z][\w]*)\s*:\s*(.+)/), entity = line.match(/^\s*([A-Z][\w]*)\s*\{\s*$/), field = line.match(/^\s*(\w+)\s+([\w_]+)(?:\s+(PK(?:,FK)?|FK))?\s*$/); if (rel) relationships.push({ from: rel[1], left: rel[2], right: rel[3], to: rel[4], label: rel[5] }); else if (entity) fields[entity[1]] = []; else if (field) { var last = Object.keys(fields).slice(-1)[0]; if (last) fields[last].push({ type: field[1], name: field[2], key: field[3] || "" }); } }); return { fields: fields, relationships: relationships }; }
   function card(token) { if (/^(?:1|N|0\.\.1|0\.\.N)$/i.test(token)) return String(token).toUpperCase(); if (token.indexOf("o") >= 0 && token.indexOf("{") >= 0) return "0..N"; if (token.indexOf("{") >= 0) return "N"; if (token.indexOf("o") >= 0) return "0..1"; return "1"; }
-  function renderER(source, focus, analysis) { var data = parseER(source); if (analysis && Array.isArray(analysis.relationships) && analysis.relationships.length) data.relationships = analysis.relationships; if (!Object.keys(data.fields).length) return null; var ids = Object.keys(data.fields), positions = {}, preset = { DOCUMENT: [480, 72], SECTION: [96, 302], VISUAL: [480, 302], SOURCE_REF: [864, 302], DECLARATIVE_SOURCE: [480, 532] }; ids.forEach(function (id, i) { positions[id] = { x: preset[id]?.[0] ?? (96 + (i % 3) * 384), y: preset[id]?.[1] ?? (302 + Math.floor(i / 3) * 230), w: 240, h: 58 + data.fields[id].length * 28 }; }); var body = "";
-    data.relationships.forEach(function (rel) { var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return; var vertical = Math.abs((a.x + a.w / 2) - (b.x + b.w / 2)) < 32, sx = vertical ? a.x + a.w / 2 : (b.x > a.x ? a.x + a.w : a.x), sy = vertical ? (b.y > a.y ? a.y + a.h : a.y) : a.y + a.h / 2, ex = vertical ? b.x + b.w / 2 : (b.x > a.x ? b.x : b.x + b.w), ey = vertical ? (b.y > a.y ? b.y : b.y + b.h) : b.y + b.h / 2; body += elbow(sx, sy, ex, ey, vertical ? "vertical" : "horizontal", false); body += text(vertical ? sx - 18 : sx + (b.x > a.x ? 18 : -18), vertical ? sy + (b.y > a.y ? 20 : -14) : sy - 14, card(rel.left), { mono: true, size: 8, fill: C.muted, anchor: vertical ? "end" : (b.x > a.x ? "start" : "end") }) + text(vertical ? ex + 18 : ex + (b.x > a.x ? -18 : 18), vertical ? ey + (b.y > a.y ? -14 : 20) : ey - 14, card(rel.right), { mono: true, size: 8, fill: C.muted, anchor: vertical ? "start" : (b.x > a.x ? "end" : "start") }) + text((sx + ex) / 2, (sy + ey) / 2 - 10, rel.label, { mono: true, size: 8, fill: C.soft, anchor: "middle" }); });
-    ids.forEach(function (id) { var p = positions[id], focal = String(focus || "").toLowerCase().includes(id.toLowerCase()); body += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="6" fill="' + C.white + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="' + (focal ? "1.4" : "1") + '"/><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="30" rx="6" fill="' + (focal ? C.accentTint : "rgba(45,49,66,.035)") + '"/>' + text(p.x + 12, p.y + 12, "ENTITY", { mono: true, size: 7, fill: C.muted, letter: ".12em" }) + text(p.x + 12, p.y + 24, id, { size: 12, weight: 600 }); data.fields[id].forEach(function (field, index) { var y = p.y + 48 + index * 28; body += '<line x1="' + p.x + '" y1="' + (y - 9) + '" x2="' + (p.x + p.w) + '" y2="' + (y - 9) + '" stroke="' + C.rule + '"/>' + text(p.x + 12, y, field.name, { mono: true, size: 9, fill: C.ink }) + text(p.x + p.w - 12, y, field.type, { mono: true, size: 8, fill: C.muted, anchor: "end" }) + (field.key ? '<rect x="' + (p.x + 122) + '" y="' + (y - 10) + '" width="28" height="13" rx="2" fill="' + C.paper + '" stroke="' + C.rule + '"/>' + text(p.x + 136, y, field.key, { mono: true, size: 7, fill: C.muted, anchor: "middle" }) : ""); }); }); return svg("0 0 1200 760", body); }
+  function cleanRoute(points) {
+    var clean = [];
+    points.forEach(function (point) {
+      var previous = clean[clean.length - 1];
+      if (!previous || previous.x !== point.x || previous.y !== point.y) clean.push({ x: point.x, y: point.y });
+    });
+    for (var i = clean.length - 2; i > 0; i -= 1) {
+      var before = clean[i - 1], current = clean[i], after = clean[i + 1];
+      if ((before.x === current.x && current.x === after.x) || (before.y === current.y && current.y === after.y)) clean.splice(i, 1);
+    }
+    return clean;
+  }
+  function routeSegments(points) {
+    var segments = [];
+    for (var i = 1; i < points.length; i += 1) {
+      var a = points[i - 1], b = points[i];
+      if (a.x !== b.x || a.y !== b.y) segments.push({ a: a, b: b, horizontal: a.y === b.y, length: Math.abs(b.x - a.x) + Math.abs(b.y - a.y) });
+    }
+    return segments;
+  }
+  function routeLength(points) { return routeSegments(points).reduce(function (sum, segment) { return sum + segment.length; }, 0); }
+  function routeSvg(points) {
+    if (!points.length) return "";
+    var d = "M" + points[0].x + " " + points[0].y;
+    for (var i = 1; i < points.length; i += 1) {
+      if (i === points.length - 1) { d += " L" + points[i].x + " " + points[i].y; continue; }
+      var previous = points[i - 1], current = points[i], next = points[i + 1];
+      var inX = current.x - previous.x, inY = current.y - previous.y, outX = next.x - current.x, outY = next.y - current.y;
+      var radius = Math.min(8, Math.abs(inX || inY) / 4, Math.abs(outX || outY) / 4);
+      if (!radius) { d += " L" + current.x + " " + current.y; continue; }
+      var before = { x: current.x - Math.sign(inX) * radius, y: current.y - Math.sign(inY) * radius };
+      var after = { x: current.x + Math.sign(outX) * radius, y: current.y + Math.sign(outY) * radius };
+      d += " L" + before.x + " " + before.y + " Q" + current.x + " " + current.y + " " + after.x + " " + after.y;
+    }
+    return d;
+  }
+  function routeConnector(points, options) {
+    options = options || {};
+    var color = options.accent ? C.accent : C.muted, marker = options.marker === false ? "" : ' marker-end="url(#' + (options.accent ? "editorial-arrow-accent" : "editorial-arrow") + ')"', dash = options.dashed ? ' stroke-dasharray="5 4"' : "";
+    return '<path d="' + routeSvg(points) + '" fill="none" stroke="' + color + '" stroke-width="' + (options.accent ? "2" : "1.4") + '" stroke-linejoin="round" stroke-linecap="round"' + dash + marker + '/>';
+  }
+  function rectOverlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+  function segmentHitsBox(segment, box, margin) {
+    var left = box.x - margin, right = box.x + box.w + margin, top = box.y - margin, bottom = box.y + box.h + margin;
+    if (segment.horizontal) return segment.a.y >= top && segment.a.y <= bottom && Math.max(Math.min(segment.a.x, segment.b.x), left) <= Math.min(Math.max(segment.a.x, segment.b.x), right);
+    return segment.a.x >= left && segment.a.x <= right && Math.max(Math.min(segment.a.y, segment.b.y), top) <= Math.min(Math.max(segment.a.y, segment.b.y), bottom);
+  }
+  function routeHitsBoxes(points, boxes, endpoints) {
+    return routeSegments(points).some(function (segment) { return boxes.some(function (box) { return endpoints[box.id] ? false : segmentHitsBox(segment, box, 12); }); });
+  }
+  function crossingBetween(first, second) {
+    var crossings = [];
+    routeSegments(first).forEach(function (a) { routeSegments(second).forEach(function (b) {
+      if (a.horizontal === b.horizontal) return;
+      var horizontal = a.horizontal ? a : b, vertical = a.horizontal ? b : a;
+      var x = vertical.a.x, y = horizontal.a.y;
+      var withinX = x > Math.min(horizontal.a.x, horizontal.b.x) && x < Math.max(horizontal.a.x, horizontal.b.x);
+      var withinY = y > Math.min(vertical.a.y, vertical.b.y) && y < Math.max(vertical.a.y, vertical.b.y);
+      if (withinX && withinY) crossings.push({ x: x, y: y, horizontal: a.horizontal });
+    }); });
+    return crossings;
+  }
+  function routesOverlap(first, second) {
+    return routeSegments(first).some(function (a) { return routeSegments(second).some(function (b) {
+      if (a.horizontal !== b.horizontal) return false;
+      if (a.horizontal && a.a.y === b.a.y) return Math.min(Math.max(a.a.x, a.b.x), Math.max(b.a.x, b.b.x)) - Math.max(Math.min(a.a.x, a.b.x), Math.min(b.a.x, b.b.x)) > 8;
+      if (!a.horizontal && a.a.x === b.a.x) return Math.min(Math.max(a.a.y, a.b.y), Math.max(b.a.y, b.b.y)) - Math.max(Math.min(a.a.y, a.b.y), Math.min(b.a.y, b.b.y)) > 8;
+      return false;
+    }); });
+  }
+  function bridge(x, y, horizontal, color) {
+    var d = horizontal ? "M" + (x - 8) + " " + y + " L" + (x - 4) + " " + y + " Q" + x + " " + (y - 8) + " " + (x + 4) + " " + y + " L" + (x + 8) + " " + y : "M" + x + " " + (y - 8) + " L" + x + " " + (y - 4) + " Q" + (x + 8) + " " + y + " " + x + " " + (y + 4) + " L" + x + " " + (y + 8);
+    return '<path d="' + d + '" fill="none" stroke="' + C.paper + '" stroke-width="5" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.4" stroke-linecap="round"/>';
+  }
+  function port(node, side, index, count) {
+    var offset = (index + 1) / (count + 1);
+    if (side === "left") return { x: node.x, y: node.y + node.h * offset };
+    if (side === "right") return { x: node.x + node.w, y: node.y + node.h * offset };
+    if (side === "top") return { x: node.x + node.w * offset, y: node.y };
+    return { x: node.x + node.w * offset, y: node.y + node.h };
+  }
+  function preferredSides(a, b) {
+    var dx = b.x + b.w / 2 - (a.x + a.w / 2), dy = b.y + b.h / 2 - (a.y + a.h / 2);
+    if (Math.abs(dx) >= Math.abs(dy)) return { source: dx >= 0 ? "right" : "left", target: dx >= 0 ? "left" : "right" };
+    return { source: dy >= 0 ? "bottom" : "top", target: dy >= 0 ? "top" : "bottom" };
+  }
+  function routeCandidates(start, end, sourceSide, boxes) {
+    var minX = Math.min.apply(null, boxes.map(function (box) { return box.x; })), maxX = Math.max.apply(null, boxes.map(function (box) { return box.x + box.w; })), minY = Math.min.apply(null, boxes.map(function (box) { return box.y; })), maxY = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; }));
+    var lanesX = [minX - 32, maxX + 32], lanesY = [minY - 32, maxY + 32];
+    boxes.forEach(function (box) { lanesX.push(box.x - 32, box.x + box.w + 32); lanesY.push(box.y - 32, box.y + box.h + 32); });
+    var candidates = [], seen = {};
+    function add(points) { var route = cleanRoute(points), key = route.map(function (point) { return point.x + "," + point.y; }).join(";"); if (route.length > 1 && !seen[key]) { seen[key] = true; candidates.push(route); } }
+    add([start, { x: end.x, y: start.y }, end]);
+    add([start, { x: start.x, y: end.y }, end]);
+    lanesY.forEach(function (laneY) {
+      var escapeX = sourceSide === "left" ? start.x - 24 : sourceSide === "right" ? start.x + 24 : start.x;
+      add([start, { x: escapeX, y: start.y }, { x: escapeX, y: laneY }, { x: end.x, y: laneY }, end]);
+    });
+    lanesX.forEach(function (laneX) {
+      var escapeY = sourceSide === "top" ? start.y - 24 : sourceSide === "bottom" ? start.y + 24 : start.y;
+      add([start, { x: start.x, y: escapeY }, { x: laneX, y: escapeY }, { x: laneX, y: end.y }, end]);
+    });
+    return candidates;
+  }
+  function chooseRoute(start, end, sourceSide, boxes, endpoints, previousRoutes) {
+    var candidates = routeCandidates(start, end, sourceSide, boxes), best = null, bestScore = Infinity;
+    candidates.forEach(function (candidate) {
+      if (routeHitsBoxes(candidate, boxes, endpoints)) return;
+      var score = routeLength(candidate) + (candidate.length - 2) * 24;
+      previousRoutes.forEach(function (previous) { if (routesOverlap(candidate, previous.points)) score += 100000; else score += crossingBetween(candidate, previous.points).length * 180; });
+      if (score < bestScore) { bestScore = score; best = candidate; }
+    });
+    return best || candidates[0] || [start, end];
+  }
+  function labelBox(x, y, value) { var width = Math.max(32, Math.ceil(String(value || "").length * 5.2) + 16); return { x: x - width / 2, y: y - 10, w: width, h: 16 }; }
+  function placeLabel(route, value, boxes, preferSide) {
+    if (!value) return "";
+    var segments = routeSegments(route).filter(function (segment) { return segment.length >= 28; }).sort(function (a, b) { return b.length - a.length; });
+    var candidates = [];
+    segments.forEach(function (segment) {
+      var midX = (segment.a.x + segment.b.x) / 2, midY = (segment.a.y + segment.b.y) / 2;
+      if (segment.horizontal) candidates.push({ x: midX, y: segment.a.y - 16 }, { x: midX, y: segment.a.y + 16 });
+      else candidates.push({ x: segment.a.x + (preferSide === "left" ? -24 : 24), y: midY }, { x: segment.a.x + (preferSide === "left" ? 24 : -24), y: midY });
+    });
+    var choice = candidates.find(function (candidate) { return !boxes.some(function (box) { return rectOverlap(labelBox(candidate.x, candidate.y, value), box); }); }) || candidates[0];
+    return choice ? maskedLabel(choice.x, choice.y, value) : "";
+  }
+  function placeCardinality(point, side, value, boxes) {
+    var candidates = side === "left" ? [{ x: point.x - 24, y: point.y - 16 }, { x: point.x - 24, y: point.y + 16 }] : side === "right" ? [{ x: point.x + 24, y: point.y - 16 }, { x: point.x + 24, y: point.y + 16 }] : side === "top" ? [{ x: point.x, y: point.y - 24 }, { x: point.x + 24, y: point.y - 24 }] : [{ x: point.x, y: point.y + 24 }, { x: point.x + 24, y: point.y + 24 }];
+    var choice = candidates.find(function (candidate) { return !boxes.some(function (box) { return rectOverlap(labelBox(candidate.x, candidate.y, value), box); }); }) || candidates[0];
+    return maskedLabel(choice.x, choice.y, value);
+  }
+  function renderER(source, focus, analysis) {
+    var data = parseER(source);
+    if (analysis && Array.isArray(analysis.relationships) && analysis.relationships.length) data.relationships = analysis.relationships;
+    if (!Object.keys(data.fields).length) return null;
+    var ids = Object.keys(data.fields), positions = {}, preset = { DOCUMENT: [480, 72], SECTION: [96, 302], VISUAL: [480, 302], SOURCE_REF: [864, 302], DECLARATIVE_SOURCE: [480, 532] };
+    ids.forEach(function (id, i) { positions[id] = { x: preset[id]?.[0] ?? (96 + (i % 3) * 384), y: preset[id]?.[1] ?? (302 + Math.floor(i / 3) * 230), w: 240, h: 58 + data.fields[id].length * 28 }; });
+    var boxes = ids.map(function (id) { return { id: id, x: positions[id].x, y: positions[id].y, w: positions[id].w, h: positions[id].h }; }), portGroups = {};
+    data.relationships.forEach(function (rel, index) {
+      var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return;
+      var sides = preferredSides(a, b); rel.__routeIndex = index; rel.__sourceSide = sides.source; rel.__targetSide = sides.target;
+      (portGroups[rel.from + "|" + sides.source] ||= []).push(rel); (portGroups[rel.to + "|" + sides.target] ||= []).push(rel);
+    });
+    Object.keys(portGroups).forEach(function (key) { portGroups[key].forEach(function (rel, index) { rel[rel.from + "|" + rel.__sourceSide === key ? "__sourcePortIndex" : "__targetPortIndex"] = index; rel[rel.from + "|" + rel.__sourceSide === key ? "__sourcePortCount" : "__targetPortCount"] = portGroups[key].length; }); });
+    var routes = [];
+    data.relationships.forEach(function (rel) {
+      var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return;
+      var start = port(a, rel.__sourceSide, rel.__sourcePortIndex || 0, rel.__sourcePortCount || 1), end = port(b, rel.__targetSide, rel.__targetPortIndex || 0, rel.__targetPortCount || 1), endpoints = {}; endpoints[rel.from] = true; endpoints[rel.to] = true;
+      routes.push({ rel: rel, points: chooseRoute(start, end, rel.__sourceSide, boxes, endpoints, routes), start: start, end: end });
+    });
+    var body = "";
+    routes.forEach(function (route) { body += routeConnector(route.points, { dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
+    routes.forEach(function (route, routeIndex) { routes.slice(0, routeIndex).forEach(function (previous) { crossingBetween(route.points, previous.points).forEach(function (crossing) { body += bridge(crossing.x, crossing.y, crossing.horizontal, C.muted); }); }); });
+    routes.forEach(function (route) { var rel = route.rel; body += placeCardinality(route.start, rel.__sourceSide, card(rel.left), boxes) + placeCardinality(route.end, rel.__targetSide, card(rel.right), boxes) + placeLabel(route.points, rel.label, boxes, rel.__sourceSide); });
+    ids.forEach(function (id) { var p = positions[id], focal = String(focus || "").toLowerCase().includes(id.toLowerCase()); body += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="6" fill="' + C.white + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="' + (focal ? "1.4" : "1") + '"/><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="30" rx="6" fill="' + (focal ? C.accentTint : "rgba(45,49,66,.035)") + '"/>' + text(p.x + 12, p.y + 12, "ENTITY", { mono: true, size: 7, fill: C.muted, letter: ".12em" }) + text(p.x + 12, p.y + 24, id, { size: 12, weight: 600 }); data.fields[id].forEach(function (field, index) { var y = p.y + 48 + index * 28; body += '<line x1="' + p.x + '" y1="' + (y - 9) + '" x2="' + (p.x + p.w) + '" y2="' + (y - 9) + '" stroke="' + C.rule + '"/>' + text(p.x + 12, y, field.name, { mono: true, size: 9, fill: C.ink }) + text(p.x + p.w - 12, y, field.type, { mono: true, size: 8, fill: C.muted, anchor: "end" }) + (field.key ? '<rect x="' + (p.x + 122) + '" y="' + (y - 10) + '" width="28" height="13" rx="2" fill="' + C.paper + '" stroke="' + C.rule + '"/>' + text(p.x + 136, y, field.key, { mono: true, size: 7, fill: C.muted, anchor: "middle" }) : ""); }); });
+    var maxBottom = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; }));
+    return svg("0 0 1200 " + Math.max(760, maxBottom + 80), body);
+  }
   window.AureliusEditorial = { render: function (source, kind, focus, analysis) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis); return null; } };
 })();
