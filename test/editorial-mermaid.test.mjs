@@ -38,3 +38,45 @@ test("ER manual layout controls entity placement, field ports, routes, and label
   assert.match(svg, /<rect x="720" y="400" width="320"/);
   assert.ok((svg.match(/height="16"/g) || []).length >= 3, "relationship labels use opaque masks");
 });
+
+test("ER automatic layout anchors foreign keys to rows and keeps manual routes orthogonal", async () => {
+  const context = { window: {} };
+  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  const source = [
+    "erDiagram",
+    "  USERS ||--o{ AFFILIATIONS : user_id",
+    "  USERS {", "    bigint id PK", "    varchar email", "  }",
+    "  AFFILIATIONS {", "    bigint id PK", "    bigint user_id FK", "    varchar role", "  }",
+  ].join("\n");
+  const svg = context.window.AureliusEditorial.render(source, "db-schema", "", {
+    relationships: [{ from: "USERS", to: "AFFILIATIONS", left: "1", right: "0..N", label: "user_id" }],
+  }, {
+    entities: { USERS: { x: 80, y: 80, width: 300 }, AFFILIATIONS: { x: 640, y: 320, width: 300 } },
+    relationships: [{ from: "USERS", to: "AFFILIATIONS", label: "user_id", waypoints: [{ x: 480, y: 120 }] }],
+  });
+
+  assert.match(svg, /<path d="M380 128/, "the connector starts at the primary-key row");
+  assert.match(svg, /L632 120/, "a diagonal waypoint becomes right-angle segments");
+  assert.doesNotMatch(svg, /L480 120 L640 396/, "the connector never jumps diagonally into the FK row");
+});
+
+test("long state lifecycles wrap into readable rows", async () => {
+  const context = { window: {} };
+  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  const source = [
+    "stateDiagram-v2",
+    "  [*] --> PendingFormalization",
+    "  PendingFormalization --> AwaitingSignatures",
+    "  AwaitingSignatures --> PendingCorrection",
+    "  PendingCorrection --> Released",
+    "  Released --> InProgress",
+    "  InProgress --> Completed",
+    "  Completed --> Paused",
+    "  Paused --> Cancelled",
+  ].join("\n");
+  const svg = context.window.AureliusEditorial.render(source, "state", "", {});
+
+  assert.match(svg, /viewBox="0 0 1200 440"/);
+  assert.match(svg, /<rect x="96" y="136" width="144" height="64"/, "the first state stays on the first row");
+  assert.match(svg, /<rect x="96" y="292" width="144" height="64"/, "later states wrap to a second row");
+});

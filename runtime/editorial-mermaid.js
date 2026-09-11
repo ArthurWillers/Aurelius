@@ -116,9 +116,41 @@
     return svg("0 0 1200 488", body);
   }
   function parseState(source) { var edges = [], states = []; source.split(/\n/).forEach(function (line) { var match = line.match(/^\s*([^:\s]+)\s*-->\s*([^:\s]+)(?:\s*:\s*(.+))?/); if (match) { edges.push({ from: match[1], to: match[2], label: (match[3] || "").trim() }); [match[1], match[2]].forEach(function (id) { if (id !== "[*]" && !states.includes(id)) states.push(id); }); } }); return states.length ? { states: states, edges: edges } : null; }
-  function renderState(source, focus) { var data = parseState(source); if (!data) return null; var count = data.states.length, x0 = 146, gap = Math.max(148, (1120 - x0 - 120) / Math.max(1, count - 1)), y = 204, nodes = {}; data.states.forEach(function (state, i) { nodes[state] = { x: x0 + gap * i, y: y, w: 112, h: 52 }; }); var body = '<text x="72" y="56" fill="' + C.ink + '" font-family="Geist,Inter,sans-serif" font-size="16" font-weight="600">Editorial document lifecycle</text>';
-    data.edges.forEach(function (edge) { var focal = String(focus || "").toLowerCase() === edge.to.toLowerCase(), from = nodes[edge.from], to = nodes[edge.to]; if (edge.from === "[*]") { body += '<circle cx="92" cy="230" r="6" fill="' + C.ink + '"/>' + '<path d="M98 230 H' + to.x + '" stroke="' + C.muted + '" stroke-width="1.4" marker-end="url(#editorial-arrow)"/>'; return; } if (edge.to === "[*]") { body += '<circle cx="' + (from.x + from.w + 34) + '" cy="230" r="9" fill="none" stroke="' + C.ink + '"/><circle cx="' + (from.x + from.w + 34) + '" cy="230" r="5" fill="' + C.ink + '"/><path d="M' + (from.x + from.w) + ' 230 H' + (from.x + from.w + 25) + '" stroke="' + C.muted + '" stroke-width="1.4" marker-end="url(#editorial-arrow)"/>'; return; } if (from.x > to.x) { body += '<path d="M' + (from.x + 20) + ' ' + y + ' C' + (from.x + 20) + ' 122 ' + (to.x + to.w - 20) + ' 122 ' + (to.x + to.w - 20) + ' ' + y + '" fill="none" stroke="' + C.muted + '" stroke-width="1.4" marker-end="url(#editorial-arrow)"/>' + text((from.x + to.x + to.w) / 2, 126, edge.label, { mono: true, size: 8, fill: C.soft, anchor: "middle" }); } else { body += '<path d="M' + (from.x + from.w) + ' 230 H' + to.x + '" fill="none" stroke="' + (focal ? C.accent : C.muted) + '" stroke-width="' + (focal ? "2" : "1.4") + '" marker-end="url(#' + (focal ? "editorial-arrow-accent" : "editorial-arrow") + ')"/>' + text((from.x + from.w + to.x) / 2, 205, edge.label, { mono: true, size: 8, fill: C.soft, anchor: "middle" }); } });
-    data.states.forEach(function (state) { var node = nodes[state], focal = String(focus || "").toLowerCase() === state.toLowerCase(); body += '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="8" fill="' + (focal ? C.accentTint : C.white) + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="1.2"/>' + text(node.x + node.w / 2, node.y + 31, state, { size: 12, weight: 600, anchor: "middle" }); }); return svg("0 0 1200 360", body); }
+  function renderState(source, focus) {
+    var data = parseState(source); if (!data) return null;
+    var count = data.states.length, columns = count > 6 ? 4 : count, rows = Math.ceil(count / columns), width = 144, height = 64, x0 = 96, xGap = columns > 1 ? (1104 - columns * width) / (columns - 1) : 0, y0 = rows > 1 ? 136 : 164, yGap = 156, nodes = {}, viewHeight = rows > 1 ? 440 : 320;
+    data.states.forEach(function (state, index) { var column = index % columns, row = Math.floor(index / columns); nodes[state] = { x: x0 + column * (width + xGap), y: y0 + row * yGap, w: width, h: height, row: row }; });
+    var body = '<text x="72" y="48" fill="' + C.ink + '" font-family="Geist,Inter,sans-serif" font-size="16" font-weight="600">Editorial document lifecycle</text>', incoming = {}, outgoing = {};
+    data.edges.forEach(function (edge) { if (edge.from !== "[*]") (outgoing[edge.from] ||= []).push(edge); if (edge.to !== "[*]") (incoming[edge.to] ||= []).push(edge); });
+    data.edges.forEach(function (edge) {
+      var focal = String(focus || "").toLowerCase() === edge.to.toLowerCase(), from = nodes[edge.from], to = nodes[edge.to], style = { accent: focal };
+      if (edge.from === "[*]" && to) {
+        body += '<circle cx="' + (to.x - 28) + '" cy="' + (to.y + height / 2) + '" r="6" fill="' + C.ink + '"/>' + routeConnector([{ x: to.x - 22, y: to.y + height / 2 }, { x: to.x, y: to.y + height / 2 }], style);
+        return;
+      }
+      if (edge.to === "[*]" && from) {
+        body += '<circle cx="' + (from.x + from.w + 28) + '" cy="' + (from.y + height / 2) + '" r="9" fill="none" stroke="' + C.ink + '"/><circle cx="' + (from.x + from.w + 28) + '" cy="' + (from.y + height / 2) + '" r="5" fill="' + C.ink + '"/>' + routeConnector([{ x: from.x + from.w, y: from.y + height / 2 }, { x: from.x + from.w + 19, y: from.y + height / 2 }], style);
+        return;
+      }
+      if (!from || !to) return;
+      var route, label;
+      if (from.row === to.row && from.x < to.x) {
+        route = [{ x: from.x + from.w, y: from.y + height / 2 }, { x: to.x, y: to.y + height / 2 }];
+        label = { x: (from.x + from.w + to.x) / 2, y: from.y + 12 };
+      } else if (from.row < to.row) {
+        route = [{ x: from.x + from.w / 2, y: from.y + height }, { x: from.x + from.w / 2, y: to.y - 28 }, { x: to.x + to.w / 2, y: to.y - 28 }, { x: to.x + to.w / 2, y: to.y }];
+        label = { x: (from.x + from.w / 2 + to.x + to.w / 2) / 2 + 36, y: (from.y + height + to.y) / 2 };
+      } else {
+        var lane = Math.max(from.x + from.w, to.x + to.w) + 44;
+        route = [{ x: from.x + from.w, y: from.y + height / 2 }, { x: lane, y: from.y + height / 2 }, { x: lane, y: to.y + height / 2 }, { x: to.x + to.w, y: to.y + height / 2 }];
+        label = { x: lane + 32, y: (from.y + to.y + height) / 2 };
+      }
+      body += routeConnector(route, style);
+      if (edge.label) body += maskedLabel(label.x, label.y, edge.label);
+    });
+    data.states.forEach(function (state) { var node = nodes[state], focal = String(focus || "").toLowerCase() === state.toLowerCase(); body += '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="8" fill="' + (focal ? C.accentTint : C.white) + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="1.2"/>' + text(node.x + node.w / 2, node.y + 30, state, { size: 11, weight: 600, anchor: "middle", wrap: 18 }); });
+    return svg("0 0 1200 " + viewHeight, body);
+  }
   function parseFlow(source) { var labels = {}, edges = [], group = null, groups = {}; source.split(/\n/).forEach(function (line) { var sub = line.match(/^\s*subgraph\s+(.+)/i), end = /^\s*end\s*$/i.test(line), edge = line.match(/^\s*([\w-]+)(?:\[[^\]]*\]|\{[^}]*\}|\([^)]*\))?\s*(?:--\s*([^>-]+?)\s*)?--?>\s*([\w-]+)/); if (sub) { group = sub[1].trim(); groups[group] = groups[group] || []; } else if (end) group = null; var nodes = line.matchAll(/\b([\w-]+)(?:\[([^\]]+)\]|\{([^}]+)\}|\(\[([^\]]+)\]\))/g); for (var match of nodes) { labels[match[1]] = (match[2] || match[3] || match[4] || labels[match[1]] || match[1]).trim(); if (group && !groups[group].includes(match[1])) groups[group].push(match[1]); } if (edge) edges.push({ from: edge[1], to: edge[3], label: (edge[2] || "").trim() }); }); return { labels: labels, edges: edges, groups: groups }; }
   function renderDependency(source) {
     var data = parseFlow(source); if (!data.edges.length) return null;
@@ -247,12 +279,45 @@
     var relationships = Array.isArray(layout?.relationships) ? layout.relationships : [];
     return relationships.find(function (item) { return item && item.from === relationship.from && item.to === relationship.to && (item.label === undefined || item.label === relationship.label); }) || null;
   }
+  function singular(value) {
+    return String(value || "").toLowerCase().replace(/ies$/, "y").replace(/s$/, "");
+  }
+  function inferredPort(entity, fields, relationship, endpoint) {
+    var candidates = Array.isArray(fields) ? fields : [];
+    if (endpoint === "from") {
+      return candidates.some(function (field) { return field.name === "id"; }) ? { field: "id" } : {};
+    }
+    var label = String(relationship.label || "").toLowerCase();
+    var source = singular(relationship.from), exact = candidates.find(function (field) { return String(field.name).toLowerCase() === label; });
+    if (exact) return { field: exact.name };
+    var matchingForeignKey = candidates.find(function (field) {
+      var name = String(field.name).toLowerCase();
+      return name === source + "_id" || name.endsWith("_" + source + "_id");
+    });
+    return matchingForeignKey ? { field: matchingForeignKey.name } : {};
+  }
+  function orthogonalRoute(points, sourceSide) {
+    var output = [];
+    points.forEach(function (point, index) {
+      var current = { x: point.x, y: point.y }, previous = output[output.length - 1];
+      if (!previous) { output.push(current); return; }
+      if (previous.x !== current.x && previous.y !== current.y) {
+        var horizontalFirst = index === 1 ? sourceSide === "left" || sourceSide === "right" : true;
+        output.push(horizontalFirst ? { x: current.x, y: previous.y } : { x: previous.x, y: current.y });
+      }
+      output.push(current);
+    });
+    return cleanRoute(output);
+  }
   function port(node, side, index, count, fields, configuration) {
     configuration = configuration || {};
     side = configuration.side || side;
     var offset = Number.isFinite(configuration.offset) ? configuration.offset : (index + 1) / (count + 1);
     var fieldIndex = configuration.field && Array.isArray(fields) ? fields.findIndex(function (field) { return field.name === configuration.field; }) : -1;
-    if (fieldIndex >= 0 && (side === "left" || side === "right")) return { x: side === "left" ? node.x : node.x + node.w, y: node.y + 48 + fieldIndex * 28 + (Number.isFinite(configuration.fieldOffset) ? configuration.fieldOffset : 0) };
+    if (fieldIndex >= 0 && (side === "left" || side === "right")) {
+      var fieldOffset = Number.isFinite(configuration.fieldOffset) ? configuration.fieldOffset : (count > 1 ? (index - (count - 1) / 2) * 12 : 0);
+      return { x: side === "left" ? node.x : node.x + node.w, y: node.y + 48 + fieldIndex * 28 + fieldOffset };
+    }
     if (side === "left") return { x: node.x, y: node.y + node.h * offset };
     if (side === "right") return { x: node.x + node.w, y: node.y + node.h * offset };
     if (side === "top") return { x: node.x + node.w * offset, y: node.y };
@@ -316,14 +381,22 @@
     if (analysis && Array.isArray(analysis.relationships) && analysis.relationships.length) data.relationships = analysis.relationships;
     if (!Object.keys(data.fields).length) return null;
     layout = layout && typeof layout === "object" && !Array.isArray(layout) ? layout : {};
-    var ids = Object.keys(data.fields), positions = {}, preset = { DOCUMENT: [480, 72], SECTION: [96, 302], VISUAL: [480, 302], SOURCE_REF: [864, 302], DECLARATIVE_SOURCE: [480, 532] };
+    var ids = Object.keys(data.fields), positions = {}, preset = { DOCUMENT: [480, 72], SECTION: [96, 302], VISUAL: [480, 302], SOURCE_REF: [864, 302], DECLARATIVE_SOURCE: [480, 532] }, dimensions = {};
+    ids.forEach(function (id) {
+      var fields = data.fields[id], longestField = Math.max.apply(null, fields.map(function (field) { return String(field.name || "").length; })), longestType = Math.max.apply(null, fields.map(function (field) { return String(field.type || "").length; }));
+      dimensions[id] = { w: Math.max(240, Math.min(520, 68 + longestField * 5.4 + longestType * 5)), h: 58 + fields.length * 28 };
+    });
+    var columnWidths = [0, 0, 0], rowHeights = [];
+    ids.forEach(function (id, index) { columnWidths[index % 3] = Math.max(columnWidths[index % 3], dimensions[id].w); rowHeights[Math.floor(index / 3)] = Math.max(rowHeights[Math.floor(index / 3)] || 0, dimensions[id].h); });
+    var columnX = [96, 96 + columnWidths[0] + 112, 96 + columnWidths[0] + columnWidths[1] + 224], rowY = [], cursorY = 72;
+    rowHeights.forEach(function (height, index) { rowY[index] = cursorY; cursorY += height + 112; });
     ids.forEach(function (id, i) {
-      var configured = layout.entities && layout.entities[id] || {};
+      var configured = layout.entities && layout.entities[id] || {}, presetPosition = preset[id], column = i % 3, row = Math.floor(i / 3);
       positions[id] = {
-        x: Number.isFinite(configured.x) ? configured.x : (preset[id]?.[0] ?? (96 + (i % 3) * 384)),
-        y: Number.isFinite(configured.y) ? configured.y : (preset[id]?.[1] ?? (302 + Math.floor(i / 3) * 230)),
-        w: Number.isFinite(configured.width) ? configured.width : 240,
-        h: 58 + data.fields[id].length * 28,
+        x: Number.isFinite(configured.x) ? configured.x : (presetPosition?.[0] ?? columnX[column]),
+        y: Number.isFinite(configured.y) ? configured.y : (presetPosition?.[1] ?? rowY[row]),
+        w: Number.isFinite(configured.width) ? configured.width : dimensions[id].w,
+        h: dimensions[id].h,
       };
     });
     var boxes = ids.map(function (id) { return { id: id, x: positions[id].x, y: positions[id].y, w: positions[id].w, h: positions[id].h }; }), portGroups = {};
@@ -337,8 +410,8 @@
     var routes = [];
     data.relationships.forEach(function (rel) {
       var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return;
-      var configured = rel.__layout || {}, start = port(a, rel.__sourceSide, rel.__sourcePortIndex || 0, rel.__sourcePortCount || 1, data.fields[rel.from], configured.fromPort), end = port(b, rel.__targetSide, rel.__targetPortIndex || 0, rel.__targetPortCount || 1, data.fields[rel.to], configured.toPort), endpoints = {}; endpoints[rel.from] = true; endpoints[rel.to] = true;
-      var manualRoute = Array.isArray(configured.waypoints) && configured.waypoints.length ? cleanRoute([start].concat(configured.waypoints).concat([end])) : null;
+      var configured = rel.__layout || {}, sourcePort = Object.assign({}, inferredPort(rel.from, data.fields[rel.from], rel, "from"), configured.fromPort || {}), targetPort = Object.assign({}, inferredPort(rel.to, data.fields[rel.to], rel, "to"), configured.toPort || {}), start = port(a, rel.__sourceSide, rel.__sourcePortIndex || 0, rel.__sourcePortCount || 1, data.fields[rel.from], sourcePort), end = port(b, rel.__targetSide, rel.__targetPortIndex || 0, rel.__targetPortCount || 1, data.fields[rel.to], targetPort), endpoints = {}; endpoints[rel.from] = true; endpoints[rel.to] = true;
+      var manualRoute = Array.isArray(configured.waypoints) && configured.waypoints.length ? orthogonalRoute([start].concat(configured.waypoints).concat([end]), rel.__sourceSide) : null;
       routes.push({ rel: rel, layout: configured, points: manualRoute || chooseRoute(start, end, rel.__sourceSide, boxes, endpoints, routes), start: start, end: end });
     });
     var body = "";
