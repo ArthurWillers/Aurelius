@@ -334,17 +334,19 @@ test("init creates a reviewable starter site with an architecture example", asyn
     readFile(path.join(site, "content", "home.md"), "utf8"),
     readFile(path.join(site, "content", "getting-started.md"), "utf8"),
     readFile(path.join(site, "diagrams", "starter-overview.json"), "utf8"),
-    readFile(path.join(site, ".agents", "skills", "aurelius-documentation", "SKILL.md"), "utf8"),
-    readFile(path.join(site, ".agents", "skills", "documentation-migration", "SKILL.md"), "utf8"),
+    readFile(path.join(parent, ".agents", "skills", "aurelius-documentation", "SKILL.md"), "utf8"),
+    readFile(path.join(parent, ".agents", "skills", "documentation-migration", "SKILL.md"), "utf8"),
   ]);
   assert.match(home, /\{\{diagram:starter-overview\}\}/);
   assert.match(home, /visibility: public/);
   assert.match(guide, /aurelius check --site/);
   assert.match(guide, /\.agents\/skills/);
+  assert.match(guide, /one level above/);
   assert.match(guide, /visibility: public/);
   assert.match(authoringSkill, /Aurelius documentation/);
   assert.match(migrationSkill, /documentation migration/);
   assert.equal(JSON.parse(diagram).kind, "architecture");
+  await assert.rejects(access(path.join(site, ".agents")), { code: "ENOENT" });
 });
 
 test("init accepts a custom PNG logo and records it in site configuration", async (context) => {

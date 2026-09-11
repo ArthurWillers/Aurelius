@@ -126,7 +126,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.5" },
+        framework: { name: "Aurelius", version: "0.4.6" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",
@@ -221,7 +221,7 @@ function starterGettingStarted() {
     "",
     "## Use the included skills",
     "",
-    "The initialized site includes `.agents/skills/` with the Aurelius authoring and documentation-migration workflows. Keep these files with the site so people and agents can use the same instructions as the installed Aurelius version.",
+    "The initialized project includes `.agents/skills/` at its root with the Aurelius authoring and documentation-migration workflows. When the site lives in `docs/`, this directory is one level above it. Keep these files with the project so people and agents can use the same instructions as the installed Aurelius version.",
     "",
     "## Navigate the contracts",
     "",
@@ -266,6 +266,9 @@ export async function initializeDocumentation(targetArgument) {
   }
 
   const targetDirectory = path.resolve(process.cwd(), targetArgument);
+  const projectDirectory = targetDirectory === path.resolve(process.cwd())
+    ? targetDirectory
+    : path.dirname(targetDirectory);
   if (!(await isEmptyOrMissing(targetDirectory))) {
     throw new Error(
       "A pasta de destino precisa estar vazia: " + targetDirectory,
@@ -294,7 +297,7 @@ export async function initializeDocumentation(targetArgument) {
     mkdir(path.join(targetDirectory, "assets"), { recursive: true }),
     mkdir(path.join(targetDirectory, "content"), { recursive: true }),
     mkdir(path.join(targetDirectory, "diagrams"), { recursive: true }),
-    mkdir(path.join(targetDirectory, ".agents"), { recursive: true }),
+    mkdir(path.join(projectDirectory, ".agents"), { recursive: true }),
   ]);
   await Promise.all([
     selectedLogo
@@ -316,11 +319,11 @@ export async function initializeDocumentation(targetArgument) {
       path.join(targetDirectory, "site.config.json"),
       starterConfig(title, logoFileName),
     ),
-    cp(skillsSource, path.join(targetDirectory, ".agents", "skills"), { recursive: true }),
+    cp(skillsSource, path.join(projectDirectory, ".agents", "skills"), { recursive: true }),
   ]);
 
   console.log("Site Aurelius criado em " + targetDirectory);
-  console.log("Skills Aurelius copiadas para " + path.join(targetDirectory, ".agents", "skills"));
+  console.log("Skills Aurelius copiadas para " + path.join(projectDirectory, ".agents", "skills"));
   if (detectedLogo) console.log("Logo detectado: " + detectedLogo);
 }
 

@@ -9,7 +9,7 @@ Aurelius is a local static documentation generator for people and agents. It tur
 Install Aurelius from a tagged GitHub release in the project that owns the documentation. This records the resolved revision in `package-lock.json`, so local work and CI use the same version:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.5
+npm install --save-dev github:ArthurWillers/Aurelius#v0.4.6
 ```
 
 Clone the repository only to contribute to Aurelius or maintain a fork:
@@ -33,14 +33,14 @@ npm install --save-dev /absolute/path/to/Aurelius
 ```
 
 The npm package includes the portable authoring skills under
-`node_modules/@avw/aurelius/.agents/skills/`. Running `aurelius init` copies them
-into the new site's `.agents/skills/` directory, keeping the documentation and
-migration workflows available with the exact Aurelius version installed by the
-project.
+`node_modules/@avw/aurelius/.agents/skills/`. Running `aurelius init docs` copies
+them into the project root at `.agents/skills/`, keeping the documentation and
+migration workflows beside the site and available with the exact Aurelius
+version installed by the project.
 
 ## Create and build a site
 
-Create a new site. If `logo.svg`, `logo.png`, `logo.jpeg`, or `logo.jpg` exists in the current directory, Aurelius copies the first match into the site. Otherwise it creates an editable generic SVG logo. The command also copies the portable skills into `.agents/skills/`.
+Create a new site. If `logo.svg`, `logo.png`, `logo.jpeg`, or `logo.jpg` exists in the current directory, Aurelius copies the first match into the site. Otherwise it creates an editable generic SVG logo. The command also copies the portable skills into `.agents/skills/` at the project root.
 
 ```bash
 npx --no-install aurelius init docs --title "Product documentation"
@@ -131,11 +131,11 @@ Do not commit `dist/`: the workflow rebuilds it and uploads only the generated a
 Create and push a release tag:
 
 ```bash
-git tag v0.4.5
+git tag v0.4.6
 ```
 
 ```bash
-git push origin v0.4.5
+git push origin v0.4.6
 ```
 
 ## Project skills
