@@ -330,15 +330,20 @@ test("init creates a reviewable starter site with an architecture example", asyn
   assert.equal(init.status, 0, init.stderr);
   const check = run(site, "check");
   assert.equal(check.status, 0, check.stderr);
-  const [home, guide, diagram] = await Promise.all([
+  const [home, guide, diagram, authoringSkill, migrationSkill] = await Promise.all([
     readFile(path.join(site, "content", "home.md"), "utf8"),
     readFile(path.join(site, "content", "getting-started.md"), "utf8"),
     readFile(path.join(site, "diagrams", "starter-overview.json"), "utf8"),
+    readFile(path.join(site, ".agents", "skills", "aurelius-documentation", "SKILL.md"), "utf8"),
+    readFile(path.join(site, ".agents", "skills", "documentation-migration", "SKILL.md"), "utf8"),
   ]);
   assert.match(home, /\{\{diagram:starter-overview\}\}/);
   assert.match(home, /visibility: public/);
   assert.match(guide, /aurelius check --site/);
+  assert.match(guide, /\.agents\/skills/);
   assert.match(guide, /visibility: public/);
+  assert.match(authoringSkill, /Aurelius documentation/);
+  assert.match(migrationSkill, /documentation migration/);
   assert.equal(JSON.parse(diagram).kind, "architecture");
 });
 

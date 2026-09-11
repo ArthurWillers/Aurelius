@@ -126,7 +126,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.3" },
+        framework: { name: "Aurelius", version: "0.4.4" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",
@@ -219,6 +219,10 @@ function starterGettingStarted() {
     "",
     "Run `aurelius check --site .` to verify relationships, anchors, assets, and diagrams. Then run `aurelius build --site .` to update `dist/`.",
     "",
+    "## Use the included skills",
+    "",
+    "The initialized site includes `.agents/skills/` with the Aurelius authoring and documentation-migration workflows. Keep these files with the site so people and agents can use the same instructions as the installed Aurelius version.",
+    "",
     "## Navigate the contracts",
     "",
     "Publication provides HTML for people plus Markdown and JSON for agents. Use [the home page](doc:home) as the starting point.",
@@ -284,10 +288,13 @@ export async function initializeDocumentation(targetArgument) {
     await ensureExists(logoPath, "Logo ausente: " + logoPath);
     logoFileName = "logo" + extension;
   }
+  const skillsSource = path.join(frameworkRoot, ".agents", "skills");
+  await ensureExists(skillsSource, "Skills portáteis do Aurelius ausentes no pacote instalado.");
   await Promise.all([
     mkdir(path.join(targetDirectory, "assets"), { recursive: true }),
     mkdir(path.join(targetDirectory, "content"), { recursive: true }),
     mkdir(path.join(targetDirectory, "diagrams"), { recursive: true }),
+    mkdir(path.join(targetDirectory, ".agents"), { recursive: true }),
   ]);
   await Promise.all([
     selectedLogo
@@ -309,9 +316,11 @@ export async function initializeDocumentation(targetArgument) {
       path.join(targetDirectory, "site.config.json"),
       starterConfig(title, logoFileName),
     ),
+    cp(skillsSource, path.join(targetDirectory, ".agents", "skills"), { recursive: true }),
   ]);
 
   console.log("Site Aurelius criado em " + targetDirectory);
+  console.log("Skills Aurelius copiadas para " + path.join(targetDirectory, ".agents", "skills"));
   if (detectedLogo) console.log("Logo detectado: " + detectedLogo);
 }
 
