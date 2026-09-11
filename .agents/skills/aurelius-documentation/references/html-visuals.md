@@ -17,6 +17,46 @@ The authoring mode does not change the semantic type: keep `kind` as `sankey`, `
 
 The Mermaid runtime provides a viewport constrained by `presentation.height`, drag panning, zoom through buttons or Ctrl/⌘ + scroll, reset, fullscreen, a full-view route, and a mandatory contextual legend. Dense diagrams may declare `presentation.initialZoom` (0.5–4) and `presentation.initialPosition` (`center` or `start`); `start` opens near the flow origin according to the Mermaid direction. Zoom uses the viewport's actual aspect ratio to make use of both available width and height. An editorial JavaScript compiler derives the roles actually used by the source, following the trust boundary and the Diagram Design Mermaid importer IR; authored `style`, `classDef`, and `linkStyle` are discarded before rendering. Use this for large models without shrinking text until it becomes unreadable; `summary`, `data`, and `declarativeAnalysis` remain the compact view for agents and degraded print output. The legend stays outside the pan area so it remains readable inline, on the dedicated page, in fullscreen, and in print.
 
+## Manual layout for ER and database schemas
+
+For a Mermaid `er` or `db-schema` diagram, `layout` is an optional, agent-editable geometry contract. Use it when automatic routing cannot keep every relation traceable. It is preserved in the API JSON and takes precedence over the editorial renderer's automatic placement; diagrams without it retain automatic layout.
+
+```json
+{
+  "layout": {
+    "canvas": { "width": 1760, "height": 900 },
+    "entities": {
+      "USERS": { "x": 80, "y": 80, "width": 320 },
+      "AFFILIATIONS": { "x": 720, "y": 560, "width": 360 }
+    },
+    "relationships": [
+      {
+        "from": "USERS",
+        "to": "AFFILIATIONS",
+        "label": "user_id",
+        "fromPort": { "side": "right", "field": "id", "fieldOffset": 8 },
+        "toPort": { "side": "left", "field": "user_id" },
+        "waypoints": [{ "x": 512, "y": 136 }, { "x": 512, "y": 520 }],
+        "labelPlacement": { "x": 544, "y": 336 },
+        "cardinalityPlacement": {
+          "from": { "x": 432, "y": 152 },
+          "to": { "x": 696, "y": 620 }
+        },
+        "bridges": [{ "x": 512, "y": 400, "orientation": "vertical" }]
+      }
+    ]
+  }
+}
+```
+
+- `entities` fixes the table's top-left corner and optional width; height remains derived from its fields.
+- A relationship is matched by `from`, `to`, and, when needed, `label`. `fromPort` and `toPort` can select an edge and a specific field row. When two relations use the same field row, `fieldOffset` separates their attachment points by up to 8px in either direction.
+- `waypoints` are the intermediate points only: the renderer always adds the configured ports as the first and last points and draws rounded orthogonal elbows.
+- `labelPlacement` and `cardinalityPlacement` give labels explicit masked positions. Keep a visible 6–10px gap from the connector and do not place a mask on a table.
+- `bridges` declare which relation visually passes over another at an unavoidable crossing. Prefer separate routes; a bridge is a fallback, not a substitute for overlapping paths.
+
+Use a 4px grid, distinct ports, and at least 12px between parallel routes. Do not route a connector behind a table that is not one of its endpoints. If a logical schema needs more than five tables or six foreign-key relations, split it into focused diagrams instead of relying on increasingly complex routes.
+
 ## Authored HTML envelope
 
 Create the scaffold with:

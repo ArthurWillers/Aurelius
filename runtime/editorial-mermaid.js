@@ -242,8 +242,17 @@
     var d = horizontal ? "M" + (x - 8) + " " + y + " L" + (x - 4) + " " + y + " Q" + x + " " + (y - 8) + " " + (x + 4) + " " + y + " L" + (x + 8) + " " + y : "M" + x + " " + (y - 8) + " L" + x + " " + (y - 4) + " Q" + (x + 8) + " " + y + " " + x + " " + (y + 4) + " L" + x + " " + (y + 8);
     return '<path d="' + d + '" fill="none" stroke="' + C.paper + '" stroke-width="5" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.4" stroke-linecap="round"/>';
   }
-  function port(node, side, index, count) {
-    var offset = (index + 1) / (count + 1);
+  function configuredPoint(value) { return value && Number.isFinite(value.x) && Number.isFinite(value.y); }
+  function relationshipLayout(layout, relationship) {
+    var relationships = Array.isArray(layout?.relationships) ? layout.relationships : [];
+    return relationships.find(function (item) { return item && item.from === relationship.from && item.to === relationship.to && (item.label === undefined || item.label === relationship.label); }) || null;
+  }
+  function port(node, side, index, count, fields, configuration) {
+    configuration = configuration || {};
+    side = configuration.side || side;
+    var offset = Number.isFinite(configuration.offset) ? configuration.offset : (index + 1) / (count + 1);
+    var fieldIndex = configuration.field && Array.isArray(fields) ? fields.findIndex(function (field) { return field.name === configuration.field; }) : -1;
+    if (fieldIndex >= 0 && (side === "left" || side === "right")) return { x: side === "left" ? node.x : node.x + node.w, y: node.y + 48 + fieldIndex * 28 + (Number.isFinite(configuration.fieldOffset) ? configuration.fieldOffset : 0) };
     if (side === "left") return { x: node.x, y: node.y + node.h * offset };
     if (side === "right") return { x: node.x + node.w, y: node.y + node.h * offset };
     if (side === "top") return { x: node.x + node.w * offset, y: node.y };
@@ -283,8 +292,9 @@
     return best || candidates[0] || [start, end];
   }
   function labelBox(x, y, value) { var width = Math.max(32, Math.ceil(String(value || "").length * 5.2) + 16); return { x: x - width / 2, y: y - 10, w: width, h: 16 }; }
-  function placeLabel(route, value, boxes, preferSide) {
+  function placeLabel(route, value, boxes, preferSide, placement) {
     if (!value) return "";
+    if (configuredPoint(placement)) return maskedLabel(placement.x, placement.y, value);
     var segments = routeSegments(route).filter(function (segment) { return segment.length >= 28; }).sort(function (a, b) { return b.length - a.length; });
     var candidates = [];
     segments.forEach(function (segment) {
@@ -295,37 +305,50 @@
     var choice = candidates.find(function (candidate) { return !boxes.some(function (box) { return rectOverlap(labelBox(candidate.x, candidate.y, value), box); }); }) || candidates[0];
     return choice ? maskedLabel(choice.x, choice.y, value) : "";
   }
-  function placeCardinality(point, side, value, boxes) {
+  function placeCardinality(point, side, value, boxes, placement) {
+    if (configuredPoint(placement)) return maskedLabel(placement.x, placement.y, value);
     var candidates = side === "left" ? [{ x: point.x - 24, y: point.y - 16 }, { x: point.x - 24, y: point.y + 16 }] : side === "right" ? [{ x: point.x + 24, y: point.y - 16 }, { x: point.x + 24, y: point.y + 16 }] : side === "top" ? [{ x: point.x, y: point.y - 24 }, { x: point.x + 24, y: point.y - 24 }] : [{ x: point.x, y: point.y + 24 }, { x: point.x + 24, y: point.y + 24 }];
     var choice = candidates.find(function (candidate) { return !boxes.some(function (box) { return rectOverlap(labelBox(candidate.x, candidate.y, value), box); }); }) || candidates[0];
     return maskedLabel(choice.x, choice.y, value);
   }
-  function renderER(source, focus, analysis) {
+  function renderER(source, focus, analysis, layout) {
     var data = parseER(source);
     if (analysis && Array.isArray(analysis.relationships) && analysis.relationships.length) data.relationships = analysis.relationships;
     if (!Object.keys(data.fields).length) return null;
+    layout = layout && typeof layout === "object" && !Array.isArray(layout) ? layout : {};
     var ids = Object.keys(data.fields), positions = {}, preset = { DOCUMENT: [480, 72], SECTION: [96, 302], VISUAL: [480, 302], SOURCE_REF: [864, 302], DECLARATIVE_SOURCE: [480, 532] };
-    ids.forEach(function (id, i) { positions[id] = { x: preset[id]?.[0] ?? (96 + (i % 3) * 384), y: preset[id]?.[1] ?? (302 + Math.floor(i / 3) * 230), w: 240, h: 58 + data.fields[id].length * 28 }; });
+    ids.forEach(function (id, i) {
+      var configured = layout.entities && layout.entities[id] || {};
+      positions[id] = {
+        x: Number.isFinite(configured.x) ? configured.x : (preset[id]?.[0] ?? (96 + (i % 3) * 384)),
+        y: Number.isFinite(configured.y) ? configured.y : (preset[id]?.[1] ?? (302 + Math.floor(i / 3) * 230)),
+        w: Number.isFinite(configured.width) ? configured.width : 240,
+        h: 58 + data.fields[id].length * 28,
+      };
+    });
     var boxes = ids.map(function (id) { return { id: id, x: positions[id].x, y: positions[id].y, w: positions[id].w, h: positions[id].h }; }), portGroups = {};
     data.relationships.forEach(function (rel, index) {
       var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return;
-      var sides = preferredSides(a, b); rel.__routeIndex = index; rel.__sourceSide = sides.source; rel.__targetSide = sides.target;
-      (portGroups[rel.from + "|" + sides.source] ||= []).push(rel); (portGroups[rel.to + "|" + sides.target] ||= []).push(rel);
+      var sides = preferredSides(a, b), configured = relationshipLayout(layout, rel);
+      rel.__routeIndex = index; rel.__layout = configured; rel.__sourceSide = configured?.fromPort?.side || sides.source; rel.__targetSide = configured?.toPort?.side || sides.target;
+      (portGroups[rel.from + "|" + rel.__sourceSide] ||= []).push(rel); (portGroups[rel.to + "|" + rel.__targetSide] ||= []).push(rel);
     });
     Object.keys(portGroups).forEach(function (key) { portGroups[key].forEach(function (rel, index) { rel[rel.from + "|" + rel.__sourceSide === key ? "__sourcePortIndex" : "__targetPortIndex"] = index; rel[rel.from + "|" + rel.__sourceSide === key ? "__sourcePortCount" : "__targetPortCount"] = portGroups[key].length; }); });
     var routes = [];
     data.relationships.forEach(function (rel) {
       var a = positions[rel.from], b = positions[rel.to]; if (!a || !b) return;
-      var start = port(a, rel.__sourceSide, rel.__sourcePortIndex || 0, rel.__sourcePortCount || 1), end = port(b, rel.__targetSide, rel.__targetPortIndex || 0, rel.__targetPortCount || 1), endpoints = {}; endpoints[rel.from] = true; endpoints[rel.to] = true;
-      routes.push({ rel: rel, points: chooseRoute(start, end, rel.__sourceSide, boxes, endpoints, routes), start: start, end: end });
+      var configured = rel.__layout || {}, start = port(a, rel.__sourceSide, rel.__sourcePortIndex || 0, rel.__sourcePortCount || 1, data.fields[rel.from], configured.fromPort), end = port(b, rel.__targetSide, rel.__targetPortIndex || 0, rel.__targetPortCount || 1, data.fields[rel.to], configured.toPort), endpoints = {}; endpoints[rel.from] = true; endpoints[rel.to] = true;
+      var manualRoute = Array.isArray(configured.waypoints) && configured.waypoints.length ? cleanRoute([start].concat(configured.waypoints).concat([end])) : null;
+      routes.push({ rel: rel, layout: configured, points: manualRoute || chooseRoute(start, end, rel.__sourceSide, boxes, endpoints, routes), start: start, end: end });
     });
     var body = "";
     routes.forEach(function (route) { body += routeConnector(route.points, { dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
-    routes.forEach(function (route, routeIndex) { routes.slice(0, routeIndex).forEach(function (previous) { crossingBetween(route.points, previous.points).forEach(function (crossing) { body += bridge(crossing.x, crossing.y, crossing.horizontal, C.muted); }); }); });
-    routes.forEach(function (route) { var rel = route.rel; body += placeCardinality(route.start, rel.__sourceSide, card(rel.left), boxes) + placeCardinality(route.end, rel.__targetSide, card(rel.right), boxes) + placeLabel(route.points, rel.label, boxes, rel.__sourceSide); });
-    ids.forEach(function (id) { var p = positions[id], focal = String(focus || "").toLowerCase().includes(id.toLowerCase()); body += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="6" fill="' + C.white + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="' + (focal ? "1.4" : "1") + '"/><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="30" rx="6" fill="' + (focal ? C.accentTint : "rgba(45,49,66,.035)") + '"/>' + text(p.x + 12, p.y + 12, "ENTITY", { mono: true, size: 7, fill: C.muted, letter: ".12em" }) + text(p.x + 12, p.y + 24, id, { size: 12, weight: 600 }); data.fields[id].forEach(function (field, index) { var y = p.y + 48 + index * 28; body += '<line x1="' + p.x + '" y1="' + (y - 9) + '" x2="' + (p.x + p.w) + '" y2="' + (y - 9) + '" stroke="' + C.rule + '"/>' + text(p.x + 12, y, field.name, { mono: true, size: 9, fill: C.ink }) + text(p.x + p.w - 12, y, field.type, { mono: true, size: 8, fill: C.muted, anchor: "end" }) + (field.key ? '<rect x="' + (p.x + 122) + '" y="' + (y - 10) + '" width="28" height="13" rx="2" fill="' + C.paper + '" stroke="' + C.rule + '"/>' + text(p.x + 136, y, field.key, { mono: true, size: 7, fill: C.muted, anchor: "middle" }) : ""); }); });
-    var maxBottom = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; }));
-    return svg("0 0 1200 " + Math.max(760, maxBottom + 80), body);
+    routes.forEach(function (route) { (route.layout.bridges || []).forEach(function (item) { body += bridge(item.x, item.y, item.orientation === "horizontal", C.muted); }); });
+    routes.forEach(function (route, routeIndex) { if ((route.layout.bridges || []).length) return; routes.slice(0, routeIndex).forEach(function (previous) { crossingBetween(route.points, previous.points).forEach(function (crossing) { body += bridge(crossing.x, crossing.y, crossing.horizontal, C.muted); }); }); });
+    routes.forEach(function (route) { var rel = route.rel, configured = route.layout; body += placeCardinality(route.start, rel.__sourceSide, card(rel.left), boxes, configured.cardinalityPlacement?.from) + placeCardinality(route.end, rel.__targetSide, card(rel.right), boxes, configured.cardinalityPlacement?.to) + placeLabel(route.points, rel.label, boxes, rel.__sourceSide, configured.labelPlacement); });
+    ids.forEach(function (id) { var p = positions[id], focal = String(focus || "").toLowerCase().includes(id.toLowerCase()); body += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="6" fill="' + C.white + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="' + (focal ? "1.4" : "1") + '"/><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="30" rx="6" fill="' + (focal ? C.accentTint : "rgba(45,49,66,.035)") + '"/>' + text(p.x + 12, p.y + 12, "ENTITY", { mono: true, size: 7, fill: C.muted, letter: ".12em" }) + text(p.x + 12, p.y + 24, id, { size: 12, weight: 600 }); data.fields[id].forEach(function (field, index) { var y = p.y + 48 + index * 28, typeWidth = Math.max(24, String(field.type || "").length * 5), chipX = p.x + p.w - typeWidth - 52; body += '<line x1="' + p.x + '" y1="' + (y - 9) + '" x2="' + (p.x + p.w) + '" y2="' + (y - 9) + '" stroke="' + C.rule + '"/>' + text(p.x + 12, y, field.name, { mono: true, size: 9, fill: C.ink }) + text(p.x + p.w - 12, y, field.type, { mono: true, size: 8, fill: C.muted, anchor: "end" }) + (field.key ? '<rect x="' + chipX + '" y="' + (y - 10) + '" width="28" height="13" rx="2" fill="' + C.paper + '" stroke="' + C.rule + '"/>' + text(chipX + 14, y, field.key, { mono: true, size: 7, fill: C.muted, anchor: "middle" }) : ""); }); });
+    var maxRight = Math.max.apply(null, boxes.map(function (box) { return box.x + box.w; })), maxBottom = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; })), canvasWidth = Number.isFinite(layout.canvas?.width) ? layout.canvas.width : Math.max(1200, maxRight + 80), canvasHeight = Number.isFinite(layout.canvas?.height) ? layout.canvas.height : Math.max(760, maxBottom + 80);
+    return svg("0 0 " + canvasWidth + " " + canvasHeight, body);
   }
-  window.AureliusEditorial = { render: function (source, kind, focus, analysis) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis); return null; } };
+  window.AureliusEditorial = { render: function (source, kind, focus, analysis, layout) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis, layout); return null; } };
 })();

@@ -9,6 +9,57 @@ async function ensureExists(file, message) {
   try { await access(file); } catch { throw new Error(message || "Arquivo ausente: " + file); }
 }
 
+function plainObject(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+
+function layoutPoint(value, label, diagram, canvas) {
+  if (!plainObject(value) || !Number.isFinite(value.x) || !Number.isFinite(value.y)) throw new Error(label + " precisa declarar x e y numéricos em " + diagram.sourcePath);
+  if (value.x < 0 || value.x > canvas.width || value.y < 0 || value.y > canvas.height) throw new Error(label + " precisa ficar dentro do canvas em " + diagram.sourcePath);
+}
+
+function validateERLayout(diagram) {
+  if (diagram.layout === undefined) return;
+  if (!plainObject(diagram.layout)) throw new Error("layout precisa ser objeto em " + diagram.sourcePath);
+  if (!new Set(["er", "db-schema"]).has(diagram.kind) || !diagram._mermaid) throw new Error("layout é suportado apenas em diagramas Mermaid er e db-schema: " + diagram.sourcePath);
+  const canvas = diagram.layout.canvas || { width: Number(diagram.presentation?.width) || 1200, height: Number(diagram.presentation?.height) || 760 };
+  if (!plainObject(canvas) || !Number.isFinite(canvas.width) || !Number.isFinite(canvas.height) || canvas.width < 640 || canvas.width > 3200 || canvas.height < 280 || canvas.height > 2000) throw new Error("layout.canvas precisa ter width 640–3200 e height 280–2000 em " + diagram.sourcePath);
+  if (diagram.layout.entities !== undefined) {
+    if (!plainObject(diagram.layout.entities)) throw new Error("layout.entities precisa ser objeto em " + diagram.sourcePath);
+    for (const [id, entity] of Object.entries(diagram.layout.entities)) {
+      layoutPoint(entity, "layout.entities." + id, diagram, canvas);
+      if (entity.width !== undefined && (!Number.isFinite(entity.width) || entity.width < 160 || entity.width > 640)) throw new Error("layout.entities." + id + ".width precisa ficar entre 160–640 em " + diagram.sourcePath);
+    }
+  }
+  if (diagram.layout.relationships === undefined) return;
+  if (!Array.isArray(diagram.layout.relationships)) throw new Error("layout.relationships precisa ser lista em " + diagram.sourcePath);
+  const relationships = diagram.declarativeAnalysis?.relationships || [];
+  for (const [index, relationship] of diagram.layout.relationships.entries()) {
+    const label = "layout.relationships[" + index + "]";
+    if (!plainObject(relationship) || typeof relationship.from !== "string" || typeof relationship.to !== "string") throw new Error(label + " precisa declarar from e to em " + diagram.sourcePath);
+    if (!relationships.some((item) => item.from === relationship.from && item.to === relationship.to && (relationship.label === undefined || item.label === relationship.label))) throw new Error(label + " não corresponde a uma relação Mermaid em " + diagram.sourcePath);
+    for (const portName of ["fromPort", "toPort"]) {
+      const port = relationship[portName];
+      if (port === undefined) continue;
+      if (!plainObject(port) || (port.side !== undefined && !["left", "right", "top", "bottom"].includes(port.side)) || (port.field !== undefined && typeof port.field !== "string") || (port.offset !== undefined && (!Number.isFinite(port.offset) || port.offset < 0 || port.offset > 1)) || (port.fieldOffset !== undefined && (!Number.isFinite(port.fieldOffset) || port.fieldOffset < -8 || port.fieldOffset > 8))) throw new Error(label + "." + portName + " é inválido em " + diagram.sourcePath);
+    }
+    if (relationship.waypoints !== undefined) {
+      if (!Array.isArray(relationship.waypoints) || relationship.waypoints.length > 20) throw new Error(label + ".waypoints aceita até 20 pontos em " + diagram.sourcePath);
+      relationship.waypoints.forEach((point, pointIndex) => layoutPoint(point, label + ".waypoints[" + pointIndex + "]", diagram, canvas));
+    }
+    if (relationship.labelPlacement !== undefined) layoutPoint(relationship.labelPlacement, label + ".labelPlacement", diagram, canvas);
+    if (relationship.cardinalityPlacement !== undefined) {
+      if (!plainObject(relationship.cardinalityPlacement)) throw new Error(label + ".cardinalityPlacement precisa ser objeto em " + diagram.sourcePath);
+      for (const endpoint of ["from", "to"]) if (relationship.cardinalityPlacement[endpoint] !== undefined) layoutPoint(relationship.cardinalityPlacement[endpoint], label + ".cardinalityPlacement." + endpoint, diagram, canvas);
+    }
+    if (relationship.bridges !== undefined) {
+      if (!Array.isArray(relationship.bridges)) throw new Error(label + ".bridges precisa ser lista em " + diagram.sourcePath);
+      relationship.bridges.forEach((bridge, bridgeIndex) => {
+        layoutPoint(bridge, label + ".bridges[" + bridgeIndex + "]", diagram, canvas);
+        if (!plainObject(bridge) || !["horizontal", "vertical"].includes(bridge.orientation)) throw new Error(label + ".bridges[" + bridgeIndex + "].orientation precisa ser horizontal ou vertical em " + diagram.sourcePath);
+      });
+    }
+  }
+}
+
 export async function validate(documents, diagrams, config, siteRoot) {
   const documentIds = new Set();
   const diagramIds = new Set();
@@ -95,6 +146,7 @@ export async function validate(documents, diagrams, config, siteRoot) {
     if (declarative && (!diagram.summary || diagram.summary.trim().length < 24)) throw new Error("Fonte declarativa precisa de summary com pelo menos 24 caracteres em " + diagram.sourcePath);
     if (declarative && diagram.interactive) throw new Error("Fonte Mermaid não aceita interactive: true; interações executáveis são bloqueadas em " + diagram.sourcePath);
     if (diagram.data !== undefined && diagram.data !== null && typeof diagram.data !== "object") throw new Error("data precisa ser objeto, lista ou null em " + diagram.sourcePath);
+    validateERLayout(diagram);
     for (const reference of diagram.sourceRefs || []) {
       if (/^https?:\/\//i.test(reference)) continue;
       await ensureExists(path.resolve(siteRoot, reference), "Referência de origem ausente no diagrama " + diagram.id + ": " + reference);

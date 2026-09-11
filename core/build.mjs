@@ -1078,6 +1078,7 @@ function renderMermaidSurface(diagram, options = {}) {
       '" data-mermaid-initial-position="' + initialPosition +
       '" data-mermaid-focus="' + escapeAttribute(JSON.stringify(focus)) +
       '" data-mermaid-analysis="' + escapeAttribute(JSON.stringify(diagram.declarativeAnalysis || {})) +
+      '" data-mermaid-layout="' + escapeAttribute(JSON.stringify(diagram.layout || {})) +
       '" style="--mermaid-height:' + height + 'px">',
     '<header class="mermaid-toolbar"><p>' + escapeHtml(copy.mermaidCanvas) +
       '</p><div class="mermaid-controls" aria-label="' + escapeAttribute(copy.mermaidControls) + '">',

@@ -272,7 +272,9 @@
     try { editorialFocus = JSON.parse(surface.dataset.mermaidFocus || "[]"); } catch (error) { editorialFocus = []; }
     var editorialAnalysis = {};
     try { editorialAnalysis = JSON.parse(surface.dataset.mermaidAnalysis || "{}"); } catch (error) { editorialAnalysis = {}; }
-    var editorial = window.AureliusEditorial && window.AureliusEditorial.render && window.AureliusEditorial.render(source, surface.dataset.mermaidKind, editorialFocus.join(" "), editorialAnalysis);
+    var editorialLayout = {};
+    try { editorialLayout = JSON.parse(surface.dataset.mermaidLayout || "{}"); } catch (error) { editorialLayout = {}; }
+    var editorial = window.AureliusEditorial && window.AureliusEditorial.render && window.AureliusEditorial.render(source, surface.dataset.mermaidKind, editorialFocus.join(" "), editorialAnalysis, editorialLayout);
     if (editorial) {
       target.innerHTML = editorial;
       target.removeAttribute("aria-busy");
