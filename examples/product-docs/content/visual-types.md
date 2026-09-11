@@ -35,11 +35,11 @@ Its source envelope is small:
 }
 ```
 
-Use authored HTML only when precise visual grammar is part of the explanation and Mermaid or a native diagram cannot express it. All modes use the same `{{diagram:id}}` inclusion token.
+Use authored HTML only when precise visual grammar is part of the explanation and Mermaid or a native diagram cannot express it. Every non-Canvas mode uses `{{diagram:id}}`; Canvas alone uses `{{canvas:id}}`.
 
 ## Forty-two accepted source kinds
 
-Aurelius accepts all 40 visual grammars defined by `diagram-design`, its interactive `canvas` kind, and a `custom` escape hatch. Mermaid is the default declarative source when its grammar covers the selected kind. `architecture` and `canvas` also have native layout engines; SVG and authored HTML remain compatibility and high-fidelity escape hatches. Canvas accepts semantic JSON only; `custom` accepts authored HTML only.
+Aurelius accepts all 40 visual grammars defined by `diagram-design`, its interactive `canvas` kind, and a `custom` escape hatch. The CLI defaults to Mermaid only for kinds with a semantically equivalent starter: `flowchart`, `sequence`, `state`, `er`, `db-schema`, `uml-class`, `gantt`, `journey`, `bar`, `line`, `quadrant`, `timeline`, and `sankey`. Other named kinds require an explicit `--format html` or `--format svg` instead of receiving a misleading generic flowchart. `architecture` and `canvas` also have native layout engines; Canvas accepts semantic JSON only, and `custom` accepts authored HTML only.
 
 | Family | Accepted `kind` values |
 | --- | --- |

@@ -3,6 +3,7 @@ import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { buildDocumentation } from "./build.mjs";
+import { normalizedConfig } from "./config.mjs";
 
 const optionValue = (name) => {
   const position = process.argv.indexOf(name);
@@ -28,6 +29,22 @@ const mimeType = (file) =>
 const reloadClient =
   '<script>(function(){var e=new EventSource("/__aurelius/events");e.addEventListener("reload",function(){location.reload()})})();</script>';
 
+async function configuredOutputDirectory(siteRoot) {
+  const config = normalizedConfig(JSON.parse(await readFile(path.join(siteRoot, "site.config.json"), "utf8")));
+  return { config, outputDirectory: path.resolve(siteRoot, config.outputDirectory) };
+}
+
+export function previewFilePath(outputDirectory, pathname) {
+  const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const cleanRequested = pathname !== "/" && (pathname.endsWith("/") || !path.posix.extname(requested))
+    ? path.posix.join(requested, "index.html")
+    : requested;
+  const file = path.resolve(outputDirectory, cleanRequested);
+  const relative = path.relative(outputDirectory, file);
+  if (!relative || relative.startsWith(".." + path.sep) || path.isAbsolute(relative)) return null;
+  return file;
+}
+
 export async function developDocumentation() {
   const siteArgument = optionValue("--site");
   if (!siteArgument) {
@@ -35,13 +52,7 @@ export async function developDocumentation() {
   }
 
   const siteRoot = path.resolve(process.cwd(), siteArgument);
-  const config = JSON.parse(
-    await readFile(path.join(siteRoot, "site.config.json"), "utf8"),
-  );
-  const outputDirectory = path.resolve(
-    siteRoot,
-    config.outputDirectory || "dist",
-  );
+  let { config, outputDirectory } = await configuredOutputDirectory(siteRoot);
   const port = Number(optionValue("--port") || 4173);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("--port precisa estar entre 1 e 65535.");
@@ -51,9 +62,13 @@ export async function developDocumentation() {
 
   const clients = new Set();
   const server = createServer(async (request, response) => {
-    const pathname = decodeURIComponent(
-      new URL(request.url || "/", "http://localhost").pathname,
-    );
+    let pathname;
+    try {
+      pathname = decodeURIComponent(new URL(request.url || "/", "http://localhost").pathname);
+    } catch {
+      response.writeHead(400).end("Bad request");
+      return;
+    }
     if (pathname === "/__aurelius/events") {
       response.writeHead(200, {
         "Cache-Control": "no-cache",
@@ -66,10 +81,8 @@ export async function developDocumentation() {
       return;
     }
 
-    const requested = pathname === "/" ? "index.html" : pathname.slice(1);
-    const file = path.resolve(outputDirectory, requested);
-    const relative = path.relative(outputDirectory, file);
-    if (relative.startsWith(".." + path.sep) || path.isAbsolute(relative)) {
+    const file = previewFilePath(outputDirectory, pathname);
+    if (!file) {
       response.writeHead(403).end("Forbidden");
       return;
     }
@@ -103,6 +116,7 @@ export async function developDocumentation() {
       rebuilding = true;
       try {
         await buildDocumentation();
+        ({ config, outputDirectory } = await configuredOutputDirectory(siteRoot));
         publishReload();
         console.log("Documentação atualizada.");
       } catch (error) {
@@ -137,7 +151,14 @@ export async function developDocumentation() {
     }
   }
 
-  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve));
+  await new Promise((resolve, reject) => {
+    const onError = (error) => reject(error);
+    server.once("error", onError);
+    server.listen(port, "127.0.0.1", () => {
+      server.off("error", onError);
+      resolve();
+    });
+  });
   console.log("Aurelius em http://127.0.0.1:" + port + " (Ctrl+C para encerrar)");
 
   const close = () => {

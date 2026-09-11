@@ -21,7 +21,9 @@ diagram: authentication-flow
 
 - `id` é único e estável; `home` é a página inicial.
 - `related` só pode apontar para outro `id` existente.
-- `source_refs` é relativo à raiz do site e deve existir quando declarado. Para uma fonte técnica externa, use uma URL pública `https://` estável.
+- `source_refs` é resolvido a partir da raiz do site e deve existir quando declarado. Caminhos com `..` podem citar fontes locais fora da pasta do site; eles permanecem apenas como proveniência textual na API e não são copiados para `dist`. Para uma fonte técnica externa recuperável por leitores, use uma URL pública `https://` estável.
+- `visibility` é metadado descritivo, não controle de acesso. Todo arquivo em `content/` entra em HTML, busca, API, `llms.txt` e `llms-full.txt`; não coloque segredos no site e proteja a publicação ou separe as entradas quando houver conteúdo interno.
+- O subconjunto Markdown inclui títulos H1–H4, parágrafos, ênfase, links, código inline e cercado, tabelas, citações, callouts, regras e listas planas. Títulos dentro de cercas de código não criam seções nem âncoras. Prefira equivalentes simples para extensões fora desse contrato.
 - `diagram` aponta para o `id` de uma fonte JSON em `diagrams/`.
 - `{{diagram:id}}` inclui qualquer visual que não seja Canvas; `{{canvas:id}}` inclui um Canvas.
 - `asset:arquivo.ext` aponta para `assets/arquivo.ext`, que é copiado para a saída.

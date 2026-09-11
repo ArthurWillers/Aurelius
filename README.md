@@ -73,6 +73,8 @@ Create a Mermaid, HTML, or SVG visual source:
 npx --no-install aurelius visual init release-flow --site docs --kind sankey --format html
 ```
 
+When `--format` is omitted, Aurelius selects Mermaid only for visual kinds with an equivalent starter. Other kinds require an explicit HTML or SVG format instead of generating a generic diagram under the wrong semantic kind.
+
 Inside this repository, use the package script:
 
 ```bash
@@ -114,6 +116,8 @@ docs/
 ```
 
 Each Markdown document has frontmatter with a stable `id`. Use `doc:` links for internal documents, `asset:` links for published assets, and `related` for explicit semantic relationships. The build writes human-facing HTML plus `llms.txt`, Markdown exports, and `api/` JSON projections for agents.
+
+`visibility` is metadata, not access control: every document under `content/` is emitted into all projections. Protect internal deployments at the host or use separate site inputs, and never put secrets in a site. Local `source_refs` are checked as provenance but are not copied into the generated output.
 
 ## GitHub Pages
 

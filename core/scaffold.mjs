@@ -218,12 +218,35 @@ function starterMermaid(kind) {
   section Verify
     Follow source references: 5: Reader, Agent
 `;
-  if (kind === "bar" || kind === "waterfall" || kind === "line") return `xychart-beta
+  if (kind === "bar" || kind === "line") return `xychart-beta
   x-axis [Draft, Review, Published]
   y-axis "Documents" 0 --> 12
   ${kind === "line" ? "line" : "bar"} [4, 8, 11]
 `;
-  return `flowchart TD
+  if (kind === "sankey") return `sankey-beta
+Documentation,Markdown,12
+Markdown,Validation,12
+Validation,HTML,8
+Validation,API JSON,4
+`;
+  if (kind === "timeline") return `timeline
+  title Documentation release
+  Draft : Model the source
+  Review : Validate contracts
+  Publish : Release HTML and API JSON
+`;
+  if (kind === "quadrant") return `quadrantChart
+  title Documentation priorities
+  x-axis Low effort --> High effort
+  y-axis Low impact --> High impact
+  quadrant-1 Plan carefully
+  quadrant-2 Do next
+  quadrant-3 Reconsider
+  quadrant-4 Quick wins
+  API contract: [0.35, 0.82]
+  Search polish: [0.24, 0.58]
+`;
+  if (kind === "flowchart") return `flowchart TD
   start([Start]) --> understand[Describe the reader question]
   understand --> enough{Is the source complete?}
   enough -- Yes --> publish[Validate and publish]
@@ -232,7 +255,12 @@ function starterMermaid(kind) {
   publish --> done([Done])
   class publish focal
 `;
+  return null;
 }
+
+const mermaidScaffoldKinds = new Set([
+  "bar", "db-schema", "er", "flowchart", "gantt", "journey", "line", "quadrant", "sankey", "sequence", "state", "timeline", "uml-class",
+]);
 
 function visualDefinition({ id, kind, format, title, description, artifactPath }) {
   return {
@@ -284,7 +312,7 @@ async function assertAvailable(files) {
   }
 }
 
-export async function initializeVisual({ id, site, kind, format = "mermaid" } = {}) {
+export async function initializeVisual({ id, site, kind, format } = {}) {
   if (!site) throw new Error("Informe o site com `--site <pasta>`.");
   if (!id || !slugPattern.test(id)) {
     throw new Error("ID visual inválido. Use letras minúsculas, números e hífens, por exemplo `release-flow`.");
@@ -292,9 +320,17 @@ export async function initializeVisual({ id, site, kind, format = "mermaid" } = 
   if (!kind || !supportedDiagramKinds.has(kind)) {
     throw new Error("Tipo visual inválido: " + (kind || "(ausente)") + ". Execute `aurelius visual types` para ver os tipos.");
   }
-  if (!supportedFormats.has(format)) throw new Error("Formato inválido: " + format + ". Use `mermaid`, `html` ou `svg`.");
   if (kind === "canvas") {
     throw new Error("Canvas usa JSON semântico e o token `{{canvas:id}}`; ele não é criado como HTML/SVG. Escolha outro tipo ou use o exemplo Canvas como base.");
+  }
+  if (!format) {
+    if (kind === "custom") format = "html";
+    else if (mermaidScaffoldKinds.has(kind)) format = "mermaid";
+    else throw new Error("O tipo `" + kind + "` não possui um scaffold Mermaid equivalente. Escolha explicitamente `--format html` ou `--format svg`, ou use JSON nativo quando o tipo permitir.");
+  }
+  if (!supportedFormats.has(format)) throw new Error("Formato inválido: " + format + ". Use `mermaid`, `html` ou `svg`.");
+  if (format === "mermaid" && !mermaidScaffoldKinds.has(kind)) {
+    throw new Error("O tipo `" + kind + "` não possui um scaffold Mermaid equivalente. Use `--format html` ou `--format svg`.");
   }
   if (kind === "custom" && format !== "html") {
     throw new Error("O tipo `custom` exige `--format html`.");
@@ -344,11 +380,14 @@ export async function initializeVisual({ id, site, kind, format = "mermaid" } = 
 
 export function listVisualTypes() {
   const lines = [
-    "Tipos visuais disponíveis (aceitam Mermaid declarativo quando a gramática representar o tipo; HTML/SVG seguem como compatibilidade):",
+    "Tipos visuais disponíveis (Mermaid é o padrão somente quando existe um scaffold equivalente):",
     "",
     ...diagramDesignKinds.map((kind) => "  " + kind),
     "  custom       HTML autoral (somente HTML) para uma composição sem gramática nomeada",
     "  canvas       Canvas semântico navegável; criado manualmente em JSON",
+    "",
+    "Scaffolds Mermaid: " + [...mermaidScaffoldKinds].join(", "),
+    "Os demais tipos exigem `--format html` ou `--format svg`, ou uma definição JSON nativa quando suportada.",
     "",
     "Use: aurelius visual init <id> --site <pasta> --kind <tipo> [--format mermaid|html|svg]",
   ];

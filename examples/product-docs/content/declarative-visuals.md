@@ -27,7 +27,7 @@ These examples have no authored SVG or HTML. Each JSON envelope points to a smal
 }
 ```
 
-Create the same structure with `aurelius visual init my-flow --site docs --kind flowchart`. Mermaid is the default format; `--format mermaid` is available when an explicit command is preferable.
+Create the same structure with `aurelius visual init my-flow --site docs --kind flowchart`. Mermaid is the default when Aurelius has an equivalent starter for the selected kind; `--format mermaid` is available when an explicit command is preferable. For a kind without such a starter, choose `--format html` or `--format svg` explicitly so the generated source never pretends that one visual grammar is another.
 
 ## Decision flow
 

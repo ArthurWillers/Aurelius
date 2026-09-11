@@ -39,7 +39,7 @@ function runVisualCommand() {
       id: process.argv[4],
       site: optionValue("--site"),
       kind: optionValue("--kind"),
-      format: optionValue("--format") || "mermaid",
+      format: optionValue("--format"),
     });
   }
   if (visualCommand === "types") {

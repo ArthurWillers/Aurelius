@@ -37,16 +37,22 @@ export function plainHeading(value) {
 export function extractSections(markdown) {
   const sections = [];
   let active = null;
+  let fenced = false;
   const nextSlug = createHeadingSlugger();
   for (const [lineIndex, line] of markdown.split(/\r?\n/).entries()) {
-    const heading = line.match(/^(#{2,3})\s+(.+)$/);
+    if (/^```/.test(line.trim())) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
       const title = plainHeading(heading[2]);
       active = { id: nextSlug(title), level: heading[1].length, title, text: "", line: lineIndex + 1 };
       sections.push(active);
       continue;
     }
-    if (active && !line.startsWith("{{")) active.text += (active.text ? " " : "") + line.trim();
+    if (active && !line.trim().startsWith("{{")) active.text += (active.text ? " " : "") + line.trim();
   }
   return sections.map((section) => ({ ...section, text: section.text.trim() }));
 }

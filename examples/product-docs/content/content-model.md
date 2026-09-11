@@ -30,6 +30,12 @@ source_refs: ../src/auth.ts
 
 Use `[Configuration](doc:configuration)` for an internal link. Use `asset:file.ext` for a published image or attachment stored in `assets/`.
 
+## Use the supported Markdown surface
+
+Aurelius intentionally implements a compact, deterministic Markdown surface rather than every extension from a general-purpose parser. It supports headings from level 1 through 4, paragraphs, emphasis, strong text, inline code, strikethrough, links, fenced code blocks, tables, blockquotes, callouts, horizontal rules, and flat ordered, unordered, and task lists. Diagram and Canvas tokens must occupy their own line. Headings inside fenced code are preserved as code and are not added to the table of contents, search sections, or anchor validation.
+
+For constructs outside that set—such as nested lists, footnotes, raw HTML, or custom Markdown extensions—prefer a simpler equivalent or an authored visual whose contract is validated separately.
+
 ## Choose the right diagram surface
 
 Architecture diagrams in `diagrams/*.json` are deliberately bounded to 9 nodes, 12 relationships, and 3 zones. They answer one architectural question clearly.
@@ -56,4 +62,6 @@ The JSON envelope keeps `kind`, `summary`, `data`, and provenance independent fr
 
 ## Keep claims traceable
 
-`source_refs` should point to code, contracts, or documents supporting a claim. `check` verifies local references; public `https://` sources are also accepted.
+`source_refs` should point to code, contracts, or documents supporting a claim. Local paths are resolved from the site root and may use `..` to cite files elsewhere in the same repository; `check` verifies that they exist. These provenance paths are emitted as text in the API but are not copied into `dist` and are not public download links. Use a stable public `https://` URL when a published reader must be able to retrieve an external source.
+
+`visibility` is descriptive metadata for readers and downstream tooling; it is not an access-control rule. Every Markdown file in `content/` is included in HTML, search, API JSON, `llms.txt`, and `llms-full.txt`. Do not place secrets in a site, and publish internal material only behind access control supplied by the hosting environment or from a separate site/build input.

@@ -116,8 +116,10 @@
     });
   });
 
-  function status(message) {
-    var target = document.querySelector("[data-action-status]");
+  function status(message, trigger) {
+    var scope = trigger && trigger.closest(".article-actions, .diagram-actions, .code-figure, [data-html-artifact], [data-standalone-visual]");
+    var target = scope && scope.querySelector("[data-action-status]");
+    if (!target) target = document.querySelector(".article-actions [data-action-status], [data-action-status]");
     if (!target) return;
     target.textContent = message;
     window.setTimeout(function () { if (target.textContent === message) target.textContent = ""; }, 2400);
@@ -129,21 +131,21 @@
     textarea.style.cssText = "position:fixed;opacity:0;pointer-events:none";
     document.body.appendChild(textarea); textarea.select(); document.execCommand("copy"); textarea.remove();
   }
-  function copy(value, success) {
+  function copy(value, success, trigger) {
     if (!value) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(value).then(function () { status(success); }, function () { fallbackCopy(value); status(success); });
-    } else { fallbackCopy(value); status(success); }
+      navigator.clipboard.writeText(value).then(function () { status(success, trigger); }, function () { fallbackCopy(value); status(success, trigger); });
+    } else { fallbackCopy(value); status(success, trigger); }
   }
   var markdownButton = document.querySelector("[data-copy-markdown]");
   if (markdownButton) markdownButton.addEventListener("click", function () {
     var source = document.getElementById("document-markdown");
-    try { copy(JSON.parse(source.textContent), messages.markdownCopied || "Markdown copied."); } catch (error) { status(messages.markdownError || "Could not read the Markdown."); }
+    try { copy(JSON.parse(source.textContent), messages.markdownCopied || "Markdown copied.", markdownButton); } catch (error) { status(messages.markdownError || "Could not read the Markdown.", markdownButton); }
   });
   document.querySelectorAll("[data-copy-code]").forEach(function (button) {
     button.addEventListener("click", function () {
       var code = button.closest(".code-figure").querySelector("code");
-      copy(code ? code.textContent : "", messages.codeCopied || "Code copied.");
+      copy(code ? code.textContent : "", messages.codeCopied || "Code copied.", button);
     });
   });
   document.querySelectorAll("[data-copy-svg]").forEach(function (button) {
@@ -151,33 +153,33 @@
       var container = button.closest(".diagram-figure, [data-html-artifact], [data-standalone-visual]") || document;
       var source = container.querySelector("[data-artifact-svg]");
       if (source) {
-        try { copy(JSON.parse(source.textContent), messages.svgCopied || "SVG copied."); }
-        catch (error) { status(messages.svgSourceError || "Could not read the SVG."); }
+        try { copy(JSON.parse(source.textContent), messages.svgCopied || "SVG copied.", button); }
+        catch (error) { status(messages.svgSourceError || "Could not read the SVG.", button); }
         return;
       }
       var svg = container.querySelector("svg");
-      copy(svg ? svg.outerHTML : "", messages.svgCopied || "SVG copied.");
+      copy(svg ? svg.outerHTML : "", messages.svgCopied || "SVG copied.", button);
     });
   });
   document.querySelectorAll("[data-copy-mermaid]").forEach(function (button) {
     button.addEventListener("click", function () {
       var container = button.closest(".diagram-figure, [data-standalone-visual]") || document;
       var source = container.querySelector("[data-mermaid-source]");
-      if (!source) { status(messages.mermaidSourceError || "Could not read the Mermaid source."); return; }
-      try { copy(JSON.parse(source.textContent), messages.mermaidCopied || "Mermaid copied."); }
-      catch (error) { status(messages.mermaidSourceError || "Could not read the Mermaid source."); }
+      if (!source) { status(messages.mermaidSourceError || "Could not read the Mermaid source.", button); return; }
+      try { copy(JSON.parse(source.textContent), messages.mermaidCopied || "Mermaid copied.", button); }
+      catch (error) { status(messages.mermaidSourceError || "Could not read the Mermaid source.", button); }
     });
   });
   document.querySelectorAll("[data-copy-html]").forEach(function (button) {
     button.addEventListener("click", function () {
       var container = button.closest("[data-html-artifact]");
       var source = container && container.querySelector("[data-artifact-html]");
-      if (!source) { status(messages.htmlSourceError || "Could not read the HTML."); return; }
-      try { copy(JSON.parse(source.textContent), messages.htmlCopied || "HTML copied."); } catch (error) { status(messages.htmlSourceError || "Could not read the HTML."); }
+      if (!source) { status(messages.htmlSourceError || "Could not read the HTML.", button); return; }
+      try { copy(JSON.parse(source.textContent), messages.htmlCopied || "HTML copied.", button); } catch (error) { status(messages.htmlSourceError || "Could not read the HTML.", button); }
     });
   });
   document.querySelectorAll("[data-copy-link]").forEach(function (button) {
-    button.addEventListener("click", function () { copy(window.location.href, messages.linkCopied || "Link copied."); });
+    button.addEventListener("click", function () { copy(window.location.href, messages.linkCopied || "Link copied.", button); });
   });
   document.querySelectorAll("[data-print]").forEach(function (button) {
     button.addEventListener("click", function () { window.print(); });

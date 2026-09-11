@@ -18,6 +18,8 @@ The development server watches `content/`, `diagrams/`, `assets/`, and `site.con
 npx --no-install aurelius dev --site docs --port 4173
 ```
 
+Document routes work both with and without a trailing slash—for example, `/getting-started` and `/getting-started/` both serve the generated `getting-started/index.html`.
+
 ## Validate before building
 
 `check` does not write `dist/`. It stops on duplicate IDs, broken relationships, missing anchors or assets, inconsistent diagrams, and unsafe output paths.
@@ -79,6 +81,8 @@ jobs:
 Commit the site sources, the workflow, `package.json`, and `package-lock.json`; do not commit `docs/dist`. `build` recreates only the configured `outputDirectory`, and the workflow publishes the generated artifact. Relative links let the site work under a GitHub Pages project path or a custom domain without a base-URL setting.
 
 You can host on another static platform too. Keep `content/`, `diagrams/`, `assets/`, and `site.config.json` in the repository; never hand-edit generated files.
+
+Publishing is all-or-nothing for the selected site root. `visibility` travels with each document as metadata but does not filter files or enforce authorization. If some material is private, protect the whole deployment at the host or maintain separate public and internal site inputs; never rely on `visibility: internal` to keep content out of `dist`.
 
 ## Remove a site you no longer want
 

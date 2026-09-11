@@ -5,6 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { extractSections } from "../core/content.mjs";
+import { normalizedConfig } from "../core/config.mjs";
+import { previewFilePath } from "../core/dev.mjs";
+import { initializeVisual } from "../core/scaffold.mjs";
+import { diagramSchema as createDiagramSchema, documentSchema as createDocumentSchema } from "../core/schemas.mjs";
 
 const projectRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const lines = (...items) => items.join("\n");
@@ -156,6 +161,8 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.match(flowHtml, /class="html-artifact-frame"/);
   assert.match(flowHtml, /sandbox=""/);
   assert.match(flowHtml, /data-copy-html/);
+  assert.ok((flowHtml.match(/data-action-status/g) || []).length >= 2);
+  assert.match(flowHtml, /trigger\.closest\("\.article-actions, \.diagram-actions, \.code-figure/);
   assert.match(flowHtml, /Content-Security-Policy/);
   assert.match(flowHtml, /class="artifact-image"/);
   assert.match(flowFull, /AUTHORED HTML/);
@@ -328,7 +335,9 @@ test("init creates a reviewable starter site with an architecture example", asyn
     readFile(path.join(site, "diagrams", "starter-overview.json"), "utf8"),
   ]);
   assert.match(home, /\{\{diagram:starter-overview\}\}/);
+  assert.match(home, /visibility: public/);
   assert.match(guide, /aurelius check --site/);
+  assert.match(guide, /visibility: public/);
   assert.equal(JSON.parse(diagram).kind, "architecture");
 });
 
@@ -421,9 +430,66 @@ test("visual init scaffolds declarative Mermaid, HTML, and SVG sources without o
   assert.deepEqual(mermaidDefinition.source, { language: "mermaid", path: "diagrams/artifacts/approval-flow.mmd" });
   assert.match(mermaidSource, /^flowchart TD/);
 
+  await initializeVisual({ id: "access-flow", site, kind: "sankey" });
+  assert.match(await readFile(path.join(site, "diagrams", "artifacts", "access-flow.mmd"), "utf8"), /^sankey-beta/);
+
+  await assert.rejects(initializeVisual({ id: "risk-radar", site, kind: "radar" }), /não possui um scaffold Mermaid equivalente/);
+  await assert.rejects(access(path.join(site, "diagrams", "risk-radar.json")));
+
   const types = spawnSync(process.execPath, ["cli.mjs", "visual", "types"], { cwd: projectRoot, encoding: "utf8" });
   assert.equal(types.status, 0, types.stderr);
   assert.match(types.stdout, /sankey/);
   assert.match(types.stdout, /custom/);
   assert.match(types.stdout, /canvas/);
+});
+
+test("output safety and raw configuration validation fail before sources can be removed", async (context) => {
+  const site = await createSite();
+  context.after(async () => rm(site, { recursive: true, force: true }));
+  const configPath = path.join(site, "site.config.json");
+  const original = JSON.parse(await readFile(configPath, "utf8"));
+
+  await writeFile(configPath, JSON.stringify({ ...original, outputDirectory: "content" }, null, 2));
+  const unsafe = run(site, "build");
+  assert.notEqual(unsafe.status, 0);
+  assert.match(await readFile(path.join(site, "content", "home.md"), "utf8"), /id: home/);
+
+  assert.throws(() => normalizedConfig({ ...original, repository: "https://example.test/repo" }), /`repository` precisa ser `null` ou um objeto/);
+
+  assert.throws(() => normalizedConfig({ ...original, navigation: { primary: "home" } }), /`navigation\.primary` precisa ser uma lista/);
+});
+
+test("section extraction, clean preview routes, and generated schemas share the public contract", async (context) => {
+  const sections = extractSections(lines(
+    "## Real section", "Visible text", "```markdown", "### Not a section", "```", "#### Deep contract", "Details",
+  ));
+  assert.deepEqual(sections.map(({ id, level }) => ({ id, level })), [
+    { id: "real-section", level: 2 },
+    { id: "deep-contract", level: 4 },
+  ]);
+  assert.doesNotMatch(sections[0].text, /Not a section/);
+
+  const output = path.resolve("/tmp/aurelius-preview-contract");
+  assert.equal(previewFilePath(output, "/guide"), path.join(output, "guide", "index.html"));
+  assert.equal(previewFilePath(output, "/guide/"), path.join(output, "guide", "index.html"));
+  assert.equal(previewFilePath(output, "/api/index.json"), path.join(output, "api", "index.json"));
+  assert.equal(previewFilePath(output, "/../secret"), null);
+
+  const documentSchema = createDocumentSchema();
+  const diagramSchema = createDiagramSchema();
+  assert.equal(documentSchema.properties.sections.items.$ref, "#/$defs/section");
+  assert.equal(documentSchema.$defs.section.properties.level.maximum, 4);
+  assert.equal(documentSchema.properties.visuals.items.$ref, "#/$defs/visualReference");
+  assert.equal(diagramSchema.properties.nodes.items.$ref, "#/$defs/node");
+  assert.equal(diagramSchema.properties.edges.items.$ref, "#/$defs/edge");
+  assert.equal(diagramSchema.$defs.presentation.required.includes("width"), true);
+
+  const site = await createSite();
+  context.after(async () => rm(site, { recursive: true, force: true }));
+  const homePath = path.join(site, "content", "home.md");
+  const guidePath = path.join(site, "content", "guide.md");
+  await writeFile(homePath, (await readFile(homePath, "utf8")).replace("doc:guide#contrato", "doc:guide#deep-contract"));
+  await writeFile(guidePath, (await readFile(guidePath, "utf8")).replace("## Contrato", "#### Deep contract"));
+  const check = run(site, "check");
+  assert.equal(check.status, 0, check.stderr);
 });

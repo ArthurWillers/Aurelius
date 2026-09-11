@@ -69,7 +69,7 @@ Aurelius copies it into `docs/assets/` and writes `brand.logoSource`. You can la
 { "language": "pt-BR" }
 ```
 
-Use `{ "language": "en" }` for the English interface. Portuguese (`pt-BR`) is the default for a new site. Editorial strings that you explicitly configure — such as `navigation.sections[].label`, `brand.title`, and footer text — remain yours to write in the desired language.
+English (`en`) is the default for a new site. Use `{ "language": "pt-BR" }` for the Portuguese interface. Editorial strings that you explicitly configure — such as `navigation.sections[].label`, `brand.title`, and footer text — remain yours to write in the desired language.
 
 ## Keep global and local navigation separate
 
@@ -79,9 +79,11 @@ Older sites may still use a flat `navigation` array; Aurelius normalizes it for 
 
 ## Important fields
 
-- `outputDirectory` is the subdirectory rebuilt by `build`; never point it at the site root.
+- `outputDirectory` is a dedicated subdirectory rebuilt from scratch by `build`. It cannot be the site root, `content/`, `diagrams/`, `assets/`, the configured runtime, or anything inside those source paths. Use `dist` unless there is a concrete deployment reason to change it.
 - `language` selects built-in interface copy. This example uses English; use `pt-BR` for Portuguese.
 - `colors` defines the light-theme tokens used by both screen and print.
 - `framework.runtime` is an advanced escape hatch for a customized runtime directory.
 
 Keep `brand.kicker` short. It identifies the knowledge surface; it should not compete with the page title.
+
+Aurelius validates the values you actually declared before applying defaults. A malformed `navigation`, `repository`, brand, runtime, footer, or color object stops `check` with the field name instead of silently falling back to another value.

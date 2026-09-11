@@ -4,6 +4,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -176,7 +177,7 @@ function starterHome(title) {
     "description: A versioned knowledge base for people and agents.",
     "type: overview",
     "status: draft",
-    "visibility: internal",
+    "visibility: public",
     "tags: documentation, overview",
     "related: getting-started",
     "source_refs:",
@@ -204,7 +205,7 @@ function starterGettingStarted() {
     "description: A short path from technical sources to readable, discoverable pages.",
     "type: guide",
     "status: draft",
-    "visibility: internal",
+    "visibility: public",
     "tags: onboarding, writing",
     "related: home",
     "source_refs:",
@@ -1336,7 +1337,7 @@ function renderArchitectureFigure(document, diagram, colors, config) {
       escapeAttribute(standaloneHref) +
       '" aria-label="' + escapeAttribute(copy.viewFullDiagram) + ': ' +
       escapeAttribute(diagram.title) +
-      '">' + escapeHtml(copy.viewFullDiagram) + '</a></span></figcaption>',
+      '">' + escapeHtml(copy.viewFullDiagram) + '</a><span class="action-status" data-action-status role="status" aria-live="polite"></span></span></figcaption>',
     authoredSvg ? '<script type="application/json" data-artifact-svg>' + scriptSafeJson(svg) + "</script>" : "",
     "</figure>",
   ].join("");
@@ -1353,7 +1354,7 @@ function renderMermaidFigure(document, diagram, config) {
     '<figcaption class="figure-caption"><span>' + escapeHtml(copy.declarativeSource) + ': <code>' +
       escapeHtml(mermaidSourceLabel(diagram, config)) + '</code></span><span class="diagram-actions"><button type="button" data-copy-mermaid>' +
       escapeHtml(copy.copyMermaid) + '</button><button type="button" data-copy-svg>' + escapeHtml(copy.copySvg) +
-      "</button></span></figcaption>",
+      '</button><span class="action-status" data-action-status role="status" aria-live="polite"></span></span></figcaption>',
     "</figure>",
   ].join("");
 }
@@ -1382,7 +1383,7 @@ function renderHtmlArtifactFigure(document, diagram, config) {
       escapeHtml(copy.copyHtml) + "</button>" + svgAction + '<a class="diagram-link" href="' +
       escapeAttribute(standaloneHref) +
       '" aria-label="' + escapeAttribute(copy.viewFullDiagram) + ": " +
-      escapeAttribute(diagram.title) + '">' + escapeHtml(copy.viewFullDiagram) + "</a></span></figcaption>",
+      escapeAttribute(diagram.title) + '">' + escapeHtml(copy.viewFullDiagram) + '</a><span class="action-status" data-action-status role="status" aria-live="polite"></span></span></figcaption>',
     "</figure>",
   ].join("");
 }
@@ -1645,7 +1646,7 @@ function renderCodeBlock(language, code, config) {
     '<figure class="code-figure">',
     '<figcaption><span class="eyebrow">' +
       escapeHtml(label) +
-      '</span><button class="copy-code" type="button" data-copy-code>' + escapeHtml(copy.copyMarkdown.replace("Markdown", "").trim() || "Copy") + '</button></figcaption>',
+      '</span><span class="diagram-actions"><button class="copy-code" type="button" data-copy-code>' + escapeHtml(copy.copyMarkdown.replace("Markdown", "").trim() || "Copy") + '</button><span class="action-status" data-action-status role="status" aria-live="polite"></span></span></figcaption>',
     '<pre><code class="language-' +
       escapeAttribute(language || "plain") +
       '">' +
@@ -2424,6 +2425,51 @@ async function copyMermaidRuntime() {
   await cp(mermaidBrowserBundle, target, { force: true });
 }
 
+function pathsOverlap(left, right) {
+  const relative = path.relative(left, right);
+  return !relative || (!relative.startsWith(".." + path.sep) && !path.isAbsolute(relative));
+}
+
+async function canonicalDestination(target) {
+  const missing = [];
+  let current = target;
+  while (true) {
+    try {
+      return path.join(await realpath(current), ...missing.reverse());
+    } catch (error) {
+      if (!error || error.code !== "ENOENT") throw error;
+      const parent = path.dirname(current);
+      if (parent === current) throw error;
+      missing.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+async function assertSafeOutputDirectory(runtimeDirectory) {
+  const relative = path.relative(siteRoot, outputDirectory);
+  if (!relative || relative.startsWith(".." + path.sep) || path.isAbsolute(relative)) {
+    throw new Error("outputDirectory precisa ser um subdiretório do site: " + outputDirectory);
+  }
+  const protectedPaths = [
+    path.join(siteRoot, "site.config.json"),
+    contentDirectory,
+    diagramsDirectory,
+    path.join(siteRoot, "assets"),
+  ];
+  if (pathsOverlap(siteRoot, runtimeDirectory)) protectedPaths.push(runtimeDirectory);
+  const canonicalOutput = await canonicalDestination(outputDirectory);
+  const canonicalSources = await Promise.all(protectedPaths.map(canonicalDestination));
+  const conflictIndex = canonicalSources.findIndex((source) => pathsOverlap(canonicalOutput, source) || pathsOverlap(source, canonicalOutput));
+  const conflict = conflictIndex >= 0 ? protectedPaths[conflictIndex] : null;
+  if (conflict) {
+    throw new Error(
+      "outputDirectory não pode coincidir nem ficar dentro de uma fonte do site: " +
+        path.relative(siteRoot, conflict) + ". Use uma pasta dedicada, como `dist`.",
+    );
+  }
+}
+
 async function build({ checkOnly = process.argv.includes("--check") } = {}) {
   if (!siteRoot) {
     throw new Error(
@@ -2438,16 +2484,7 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
     ? path.resolve(siteRoot, config.framework.runtime)
     : path.join(frameworkRoot, "runtime");
   outputDirectory = path.resolve(siteRoot, config.outputDirectory || "dist");
-  const outputRelativeToSite = path.relative(siteRoot, outputDirectory);
-  if (
-    !outputRelativeToSite ||
-    outputRelativeToSite.startsWith(".." + path.sep) ||
-    path.isAbsolute(outputRelativeToSite)
-  ) {
-    throw new Error(
-      "outputDirectory precisa ser um subdiretório do site: " + outputDirectory,
-    );
-  }
+  await assertSafeOutputDirectory(runtimeDirectory);
 
   const [documents, diagrams, siteCss, siteJs, diagramCss, mermaidJs, editorialMermaidJs] = await Promise.all([
     readDocuments(),
@@ -2465,7 +2502,7 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
     );
   }
 
-  const logoSource = path.resolve(siteRoot, config.brand.logoSource);
+  const logoSource = resolveSiteSource(config.brand.logoSource, "brand.logoSource");
   await ensureExists(logoSource, "Logo ausente: " + config.brand.logoSource);
   const logoDataUrl =
     "data:" +

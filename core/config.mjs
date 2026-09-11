@@ -8,6 +8,85 @@ function isEnglish(language) {
   return String(language || "").toLowerCase().startsWith("en");
 }
 
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function assertString(value, field, { allowEmpty = false } = {}) {
+  if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
+    throw new Error("Configuração inválida: `" + field + "` precisa ser uma string" + (allowEmpty ? "." : " não vazia."));
+  }
+}
+
+function validateNavigationItems(items, field) {
+  if (!Array.isArray(items)) throw new Error("Configuração inválida: `" + field + "` precisa ser uma lista.");
+  for (const [index, item] of items.entries()) {
+    if (typeof item === "string" && item.trim()) continue;
+    if (isRecord(item) && Array.isArray(item.items)) {
+      if (item.label !== undefined) assertString(item.label, field + "[" + index + "].label");
+      validateNavigationItems(item.items, field + "[" + index + "].items");
+      continue;
+    }
+    throw new Error("Configuração inválida: `" + field + "[" + index + "]` precisa ser um ID ou grupo de navegação.");
+  }
+}
+
+export function validateRawConfig(config) {
+  if (!isRecord(config)) throw new Error("Configuração inválida: `site.config.json` precisa conter um objeto JSON.");
+
+  for (const field of ["language", "siteTitle", "siteDescription", "outputDirectory"]) {
+    if (config[field] !== undefined) assertString(config[field], field);
+  }
+  for (const field of ["brand", "framework", "colors", "footer"]) {
+    if (config[field] !== undefined && !isRecord(config[field])) {
+      throw new Error("Configuração inválida: `" + field + "` precisa ser um objeto.");
+    }
+  }
+  if (config.brand) {
+    for (const field of ["title", "kicker", "name", "logoSource", "logoAlt"]) {
+      if (config.brand[field] !== undefined) assertString(config.brand[field], "brand." + field);
+    }
+  }
+  if (config.framework) {
+    for (const field of ["name", "version", "runtime"]) {
+      if (config.framework[field] !== undefined) assertString(config.framework[field], "framework." + field);
+    }
+  }
+  if (config.colors) {
+    for (const [field, value] of Object.entries(config.colors)) assertString(value, "colors." + field);
+  }
+  if (config.footer) {
+    for (const field of ["left", "right"]) {
+      if (config.footer[field] !== undefined) assertString(config.footer[field], "footer." + field, { allowEmpty: true });
+    }
+  }
+
+  if (config.navigation !== undefined) {
+    if (Array.isArray(config.navigation)) {
+      validateNavigationItems(config.navigation, "navigation");
+    } else if (isRecord(config.navigation)) {
+      if (config.navigation.labelPrefix !== undefined) assertString(config.navigation.labelPrefix, "navigation.labelPrefix", { allowEmpty: true });
+      if (config.navigation.primary !== undefined) validateNavigationItems(config.navigation.primary, "navigation.primary");
+      if (config.navigation.sections !== undefined) {
+        if (!Array.isArray(config.navigation.sections)) throw new Error("Configuração inválida: `navigation.sections` precisa ser uma lista.");
+        for (const [index, section] of config.navigation.sections.entries()) {
+          if (!isRecord(section)) throw new Error("Configuração inválida: `navigation.sections[" + index + "]` precisa ser um objeto.");
+          assertString(section.label, "navigation.sections[" + index + "].label");
+          validateNavigationItems(section.items, "navigation.sections[" + index + "].items");
+        }
+      }
+    } else {
+      throw new Error("Configuração inválida: `navigation` precisa ser uma lista ou objeto.");
+    }
+  }
+
+  if (config.repository !== undefined && config.repository !== null) {
+    if (!isRecord(config.repository)) throw new Error("Configuração inválida: `repository` precisa ser `null` ou um objeto.");
+    assertString(config.repository.url, "repository.url");
+  }
+  return config;
+}
+
 export function normalizeNavigation(navigation, language = "en") {
   if (Array.isArray(navigation)) return { primary: navigation.slice(0, 5), sections: [{ label: isEnglish(language) ? "Documentation" : "Documentação", items: navigation }] };
   const value = navigation && typeof navigation === "object" ? navigation : {};
@@ -27,6 +106,7 @@ export function navigationItemIds(items = []) {
 }
 
 export function normalizedConfig(config) {
+  validateRawConfig(config);
   const normalized = {
     language: "en", siteTitle: "Documentation",
     siteDescription: "Static documentation for people and agents.",
