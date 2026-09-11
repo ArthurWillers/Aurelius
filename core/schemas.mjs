@@ -244,6 +244,8 @@ export function diagramSchema() {
           label: { type: "string" },
           fromPort: { $ref: "#/$defs/erPort" },
           toPort: { $ref: "#/$defs/erPort" },
+          showLabel: { type: "boolean" },
+          showCardinality: { type: "boolean" },
           waypoints: { type: "array", maxItems: 20, items: { $ref: "#/$defs/layoutPoint" } },
           labelPlacement: { $ref: "#/$defs/layoutPoint" },
           cardinalityPlacement: {

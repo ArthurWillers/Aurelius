@@ -25,6 +25,8 @@ test("ER manual layout controls entity placement, field ports, routes, and label
       waypoints: [{ x: 512, y: 136 }, { x: 512, y: 456 }, { x: 680, y: 456 }],
       labelPlacement: { x: 544, y: 320 },
       cardinalityPlacement: { from: { x: 432, y: 152 }, to: { x: 696, y: 440 } },
+      showLabel: true,
+      showCardinality: true,
     }],
   };
   const svg = context.window.AureliusEditorial.render(source, "db-schema", "", {
@@ -39,7 +41,7 @@ test("ER manual layout controls entity placement, field ports, routes, and label
   assert.ok((svg.match(/height="16"/g) || []).length >= 3, "relationship labels use opaque masks");
 });
 
-test("ER automatic layout anchors foreign keys to rows and keeps manual routes orthogonal", async () => {
+test("database schemas keep FK connections quiet by default while anchoring them to rows", async () => {
   const context = { window: {} };
   vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
   const source = [
@@ -58,6 +60,8 @@ test("ER automatic layout anchors foreign keys to rows and keeps manual routes o
   assert.match(svg, /<path d="M380 128/, "the connector starts at the primary-key row");
   assert.match(svg, /L632 120/, "a diagonal waypoint becomes right-angle segments");
   assert.doesNotMatch(svg, /L480 120 L640 396/, "the connector never jumps diagonally into the FK row");
+  assert.doesNotMatch(svg, /marker-end="url\(#editorial-arrow\)"/, "FK connectors do not duplicate direction with arrowheads");
+  assert.equal((svg.match(/height="16"/g) || []).length, 0, "FK connectors do not repeat labels or cardinalities by default");
 });
 
 test("long state lifecycles wrap into readable rows", async () => {

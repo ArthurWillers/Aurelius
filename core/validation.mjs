@@ -36,6 +36,7 @@ function validateERLayout(diagram) {
     const label = "layout.relationships[" + index + "]";
     if (!plainObject(relationship) || typeof relationship.from !== "string" || typeof relationship.to !== "string") throw new Error(label + " precisa declarar from e to em " + diagram.sourcePath);
     if (!relationships.some((item) => item.from === relationship.from && item.to === relationship.to && (relationship.label === undefined || item.label === relationship.label))) throw new Error(label + " não corresponde a uma relação Mermaid em " + diagram.sourcePath);
+    for (const visibility of ["showLabel", "showCardinality"]) if (relationship[visibility] !== undefined && typeof relationship[visibility] !== "boolean") throw new Error(label + "." + visibility + " precisa ser booleano em " + diagram.sourcePath);
     for (const portName of ["fromPort", "toPort"]) {
       const port = relationship[portName];
       if (port === undefined) continue;

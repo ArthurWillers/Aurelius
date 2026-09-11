@@ -376,7 +376,7 @@
     var choice = candidates.find(function (candidate) { return !boxes.some(function (box) { return rectOverlap(labelBox(candidate.x, candidate.y, value), box); }); }) || candidates[0];
     return maskedLabel(choice.x, choice.y, value);
   }
-  function renderER(source, focus, analysis, layout) {
+  function renderER(source, focus, analysis, layout, kind) {
     var data = parseER(source);
     if (analysis && Array.isArray(analysis.relationships) && analysis.relationships.length) data.relationships = analysis.relationships;
     if (!Object.keys(data.fields).length) return null;
@@ -415,13 +415,18 @@
       routes.push({ rel: rel, layout: configured, points: manualRoute || chooseRoute(start, end, rel.__sourceSide, boxes, endpoints, routes), start: start, end: end });
     });
     var body = "";
-    routes.forEach(function (route) { body += routeConnector(route.points, { dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
+    var isDatabaseSchema = kind === "db-schema";
+    routes.forEach(function (route) { body += routeConnector(route.points, { marker: !isDatabaseSchema, dashed: routes.some(function (other) { return other !== route && routesOverlap(route.points, other.points); }) }); });
     routes.forEach(function (route) { (route.layout.bridges || []).forEach(function (item) { body += bridge(item.x, item.y, item.orientation === "horizontal", C.muted); }); });
     routes.forEach(function (route, routeIndex) { if ((route.layout.bridges || []).length) return; routes.slice(0, routeIndex).forEach(function (previous) { crossingBetween(route.points, previous.points).forEach(function (crossing) { body += bridge(crossing.x, crossing.y, crossing.horizontal, C.muted); }); }); });
-    routes.forEach(function (route) { var rel = route.rel, configured = route.layout; body += placeCardinality(route.start, rel.__sourceSide, card(rel.left), boxes, configured.cardinalityPlacement?.from) + placeCardinality(route.end, rel.__targetSide, card(rel.right), boxes, configured.cardinalityPlacement?.to) + placeLabel(route.points, rel.label, boxes, rel.__sourceSide, configured.labelPlacement); });
+    routes.forEach(function (route) {
+      var rel = route.rel, configured = route.layout;
+      if (!isDatabaseSchema || configured.showCardinality === true) body += placeCardinality(route.start, rel.__sourceSide, card(rel.left), boxes, configured.cardinalityPlacement?.from) + placeCardinality(route.end, rel.__targetSide, card(rel.right), boxes, configured.cardinalityPlacement?.to);
+      if (!isDatabaseSchema || configured.showLabel === true) body += placeLabel(route.points, rel.label, boxes, rel.__sourceSide, configured.labelPlacement);
+    });
     ids.forEach(function (id) { var p = positions[id], focal = String(focus || "").toLowerCase().includes(id.toLowerCase()); body += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="6" fill="' + C.white + '" stroke="' + (focal ? C.accent : C.ink) + '" stroke-width="' + (focal ? "1.4" : "1") + '"/><rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="30" rx="6" fill="' + (focal ? C.accentTint : "rgba(45,49,66,.035)") + '"/>' + text(p.x + 12, p.y + 12, "ENTITY", { mono: true, size: 7, fill: C.muted, letter: ".12em" }) + text(p.x + 12, p.y + 24, id, { size: 12, weight: 600 }); data.fields[id].forEach(function (field, index) { var y = p.y + 48 + index * 28, typeWidth = Math.max(24, String(field.type || "").length * 5), chipX = p.x + p.w - typeWidth - 52; body += '<line x1="' + p.x + '" y1="' + (y - 9) + '" x2="' + (p.x + p.w) + '" y2="' + (y - 9) + '" stroke="' + C.rule + '"/>' + text(p.x + 12, y, field.name, { mono: true, size: 9, fill: C.ink }) + text(p.x + p.w - 12, y, field.type, { mono: true, size: 8, fill: C.muted, anchor: "end" }) + (field.key ? '<rect x="' + chipX + '" y="' + (y - 10) + '" width="28" height="13" rx="2" fill="' + C.paper + '" stroke="' + C.rule + '"/>' + text(chipX + 14, y, field.key, { mono: true, size: 7, fill: C.muted, anchor: "middle" }) : ""); }); });
     var maxRight = Math.max.apply(null, boxes.map(function (box) { return box.x + box.w; })), maxBottom = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; })), canvasWidth = Number.isFinite(layout.canvas?.width) ? layout.canvas.width : Math.max(1200, maxRight + 80), canvasHeight = Number.isFinite(layout.canvas?.height) ? layout.canvas.height : Math.max(760, maxBottom + 80);
     return svg("0 0 " + canvasWidth + " " + canvasHeight, body);
   }
-  window.AureliusEditorial = { render: function (source, kind, focus, analysis, layout) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis, layout); return null; } };
+  window.AureliusEditorial = { render: function (source, kind, focus, analysis, layout) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis, layout, kind); return null; } };
 })();
