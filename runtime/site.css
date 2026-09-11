@@ -683,7 +683,7 @@ h3 {
 }
 
 .mermaid-shell--standalone .mermaid-surface {
-  height: clamp(420px, 64vh, 760px);
+  height: min(760px, max(280px, var(--mermaid-height, 480px)));
 }
 
 .mermaid-legend {
