@@ -125,7 +125,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.2" },
+        framework: { name: "Aurelius", version: "0.4.3" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",
@@ -2109,6 +2109,10 @@ function renderAgentCards(fromDocument, config) {
 function renderNavigation(currentDocument, documents, config, logoDataUrl) {
   const copy = messages(config);
   const byId = new Map(documents.map((document) => [document.id, document]));
+  const repositoryUrl = config.repository?.url || "";
+  const repositoryLink = repositoryUrl
+    ? '<a class="repo-link" href="' + escapeAttribute(repositoryUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="' + escapeAttribute(copy.repository) + '" title="' + escapeAttribute(copy.repository) + '"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="4" cy="3" r="1.5"></circle><circle cx="12" cy="6" r="1.5"></circle><circle cx="4" cy="13" r="1.5"></circle><path d="M4 4.5v7M5.5 3h2a4.5 4.5 0 0 1 4.5 4.5M5.5 13H8a4 4 0 0 0 4-4"></path></svg></a>'
+    : "";
   const navigationLabel = (document) => {
     const title = document.id === "home" ? copy.home : document.title;
     const prefix = typeof config.navigation?.labelPrefix === "string" ? config.navigation.labelPrefix : "";
@@ -2146,7 +2150,7 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
       escapeHtml(config.brand.kicker || config.framework?.name || "aurelius") +
       "</span></a>",
     '<nav class="nav" aria-label="' + escapeAttribute(copy.primaryNavigation) + '">' + links + "</nav>",
-    '<div class="masthead-tools">',
+    '<div class="masthead-tools">', repositoryLink,
     '<div class="search"><label class="sr-only" for="site-search">' + escapeHtml(copy.search) + '</label><input id="site-search" data-search-input type="search" autocomplete="off" placeholder="' + escapeAttribute(copy.searchPlaceholder) + '" aria-controls="site-search-results" aria-expanded="false"><kbd>⌘ K</kbd><div id="site-search-results" class="search-results" data-search-results role="listbox"></div></div>',
     "</div>",
     "</header>",

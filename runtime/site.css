@@ -1359,6 +1359,37 @@ html {
   gap: 8px;
 }
 
+.repo-link {
+  align-items: center;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.repo-link:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.repo-link svg {
+  fill: none;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+  width: 17px;
+}
+
+.repo-link circle {
+  fill: var(--paper);
+}
+
 .search input {
   padding-right: 52px;
 }

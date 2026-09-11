@@ -3,13 +3,16 @@
   "siteDescription": "Static documentation that reads well for people and stays structured for agents.",
   "language": "en",
   "outputDirectory": "dist",
-  "framework": { "name": "Aurelius", "version": "0.4.2" },
+  "framework": { "name": "Aurelius", "version": "0.4.3" },
   "brand": {
     "title": "Aurelius",
     "kicker": "static documentation",
     "name": "Aurelius",
     "logoSource": "assets/logo.svg",
     "logoAlt": "Aurelius logo"
+  },
+  "repository": {
+    "url": "https://github.com/ArthurWillers/Aurelius"
   },
   "navigation": {
     "primary": ["home", "getting-started", "publishing"],

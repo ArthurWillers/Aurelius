@@ -15,7 +15,7 @@ source_refs: ../../cli.mjs, ../../package.json, ../../core/build.mjs, ../../core
 For a project that consumes Aurelius, install a versioned GitHub dependency. It records the resolved release in `package-lock.json`, so local work and CI use the same binary:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.2
+npm install --save-dev github:ArthurWillers/Aurelius#v0.4.3
 ```
 
 Install directly from the tagged GitHub release; cloning the generator is only necessary for contribution or local customization.

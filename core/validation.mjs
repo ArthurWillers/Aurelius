@@ -30,6 +30,15 @@ export async function validate(documents, diagrams, config, siteRoot) {
 
   if (!documentIds.has("home")) throw new Error('Documento inicial ausente: crie um documento com id "home".');
   if (!config.navigation || !Array.isArray(config.navigation.primary) || !Array.isArray(config.navigation.sections)) throw new Error("navigation precisa definir primary e sections em site.config.json.");
+  if (config.repository != null) {
+    if (typeof config.repository !== "object" || typeof config.repository.url !== "string") throw new Error("repository precisa definir uma URL quando declarada.");
+    try {
+      const url = new URL(config.repository.url);
+      if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("protocol");
+    } catch {
+      throw new Error("repository.url precisa ser uma URL HTTP(S) válida.");
+    }
+  }
   const validateNavigationItems = (items, location) => {
     if (!Array.isArray(items)) throw new Error(location + " precisa definir items como lista.");
     for (const item of items) {

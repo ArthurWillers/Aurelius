@@ -30,16 +30,19 @@ export function normalizedConfig(config) {
   const normalized = {
     language: "en", siteTitle: "Documentation",
     siteDescription: "Static documentation for people and agents.",
-    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.2" },
-    navigation: { primary: ["home"], sections: [] }, ...config,
+    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.3" },
+    navigation: { primary: ["home"], sections: [] }, repository: null, ...config,
     brand: {
       title: "Documentation", kicker: "knowledge base", name: config.siteTitle || "Documentation",
       logoAlt: "Documentation logo", ...(config.brand || {}),
     },
-    framework: { name: "Aurelius", version: "0.4.2", ...(config.framework || {}) },
+    framework: { name: "Aurelius", version: "0.4.3", ...(config.framework || {}) },
     colors: { ...starterColors, ...(config.colors || {}) },
   };
   normalized.navigation = normalizeNavigation(config.navigation || normalized.navigation, normalized.language);
+  normalized.repository = config.repository && typeof config.repository === "object" && typeof config.repository.url === "string"
+    ? { url: config.repository.url }
+    : null;
   return normalized;
 }
 
@@ -57,7 +60,7 @@ export function messages(config) {
         semanticSource: "Semantic source", visualSource: "Visual source", declarativeSource: "Declarative source", semanticReading: "Semantic reading", structuredData: "Structured data", noteContract: "Page contract", metadata: "Metadata", visibility: "Visibility",
         updated: "Updated", authors: "Authors", relations: "Related", sources: "Sources", onThisPage: "On this page",
         pageFormats: "Page formats", otherFormats: "Other formats", apiJson: "API JSON", previous: "← Previous", next: "Next →",
-        pager: "Previous and next documents", documentationNavigation: "Documentation navigation",
+        pager: "Previous and next documents", documentationNavigation: "Documentation navigation", repository: "Repository",
         siteProjection: "The site is a projection. Markdown and JSON remain the contracts that people, automations, and agents can review.",
         staticDocumentation: "Static documentation", sourceForReaders: "Source for people and agents", markdownCopied: "Markdown copied.",
         markdownError: "Could not read the Markdown.", codeCopied: "Code copied.", svgCopied: "SVG copied.", linkCopied: "Link copied.",
@@ -82,7 +85,7 @@ export function messages(config) {
         semanticSource: "Fonte semântica", visualSource: "Fonte visual", declarativeSource: "Fonte declarativa", semanticReading: "Leitura semântica", structuredData: "Dados estruturados", noteContract: "Contrato da nota", metadata: "Metadados", visibility: "Visibilidade",
         updated: "Atualizado", authors: "Autores", relations: "Relações", sources: "Fontes", onThisPage: "Nesta página",
         pageFormats: "Formatos desta página", otherFormats: "Outros formatos", apiJson: "JSON da API", previous: "← Anterior", next: "Próximo →",
-        pager: "Documentos anterior e próximo", documentationNavigation: "Navegação da documentação",
+        pager: "Documentos anterior e próximo", documentationNavigation: "Navegação da documentação", repository: "Repositório",
         siteProjection: "O site é uma projeção. Markdown e JSON continuam sendo os contratos que pessoas, automações e agentes podem revisar.",
         staticDocumentation: "Documentação estática", sourceForReaders: "Fonte para pessoas e agentes", markdownCopied: "Markdown copiado.",
         markdownError: "Não foi possível ler o Markdown.", codeCopied: "Código copiado.", svgCopied: "SVG copiado.", linkCopied: "Link copiado.",

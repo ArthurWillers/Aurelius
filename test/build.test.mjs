@@ -28,6 +28,7 @@ async function createSite() {
     writeFile(path.join(site, "site.config.json"), JSON.stringify({
       siteTitle: "Teste Aurelius",
       siteDescription: "Site de teste.",
+      repository: { url: "https://git.example.test/platform/docs" },
       navigation: { primary: ["home"], sections: [{ label: "Documentation", items: ["home", { label: "Guides", items: ["guide"] }] }] },
       brand: { logoSource: "assets/logo.svg" },
     }, null, 2)),
@@ -146,6 +147,7 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.match(html, /Semantic source: `diagrams\/system\.json`/);
   assert.match(html, /@media print[\s\S]*--paper: #fff/);
   assert.match(html, /class="site-sidebar"/);
+  assert.match(html, /class="repo-link" href="https:\/\/git\.example\.test\/platform\/docs"/);
   assert.match(html, /class="nav-section" data-nav-group="section-0" open>/);
   assert.match(html, /class="nav-folder" data-nav-group="section-0-1"><summary>Guides<\/summary>/);
   assert.match(html, /aurelius:nav:/);

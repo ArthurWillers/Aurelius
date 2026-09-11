@@ -22,7 +22,7 @@ Aurelius starts with versioned Markdown and JSON. One build publishes that knowl
 Install Aurelius as a versioned GitHub development dependency. The lockfile records the resolved commit, so local work and CI use the same release:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.2
+npm install --save-dev github:ArthurWillers/Aurelius#v0.4.3
 npx --no-install aurelius init docs --title "Product documentation" --logo brand.svg
 npx --no-install aurelius check --site docs
 npx --no-install aurelius build --site docs
