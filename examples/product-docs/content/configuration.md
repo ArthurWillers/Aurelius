@@ -1,7 +1,7 @@
 ---
 id: configuration
 title: Site configuration
-description: Configure branding, an automatically detected SVG, PNG, or JPEG logo, layered navigation, colors, output, and interface language in site.config.json.
+description: Configure branding, the repository link, an automatically detected SVG, PNG, or JPEG logo, layered navigation, colors, output, and interface language in site.config.json.
 type: reference
 status: observed
 visibility: public
@@ -27,6 +27,9 @@ Every site owns a `site.config.json`. It contains publication choices; Aurelius 
     "logoSource": "assets/acme.svg",
     "logoAlt": "Acme logo"
   },
+  "repository": {
+    "url": "https://github.com/acme/product-docs"
+  },
   "navigation": {
     "primary": ["home", "getting-started", "publishing"],
     "sections": [
@@ -48,6 +51,20 @@ Every site owns a `site.config.json`. It contains publication choices; Aurelius 
   }
 }
 ```
+
+## Expose the repository
+
+`repository.url` is optional. When it is configured, Aurelius adds a clearly labeled external link to the site header so readers can reach the repository that owns the documentation. Use a complete public `https://` URL:
+
+```json
+{
+  "repository": {
+    "url": "https://github.com/acme/product-docs"
+  }
+}
+```
+
+Set `repository` to `null` or omit it when the documentation should not expose a repository link.
 
 ## Use your own logo
 
@@ -81,6 +98,7 @@ Older sites may still use a flat `navigation` array; Aurelius normalizes it for 
 
 - `outputDirectory` is a dedicated subdirectory rebuilt from scratch by `build`. It cannot be the site root, `content/`, `diagrams/`, `assets/`, the configured runtime, or anything inside those source paths. Use `dist` unless there is a concrete deployment reason to change it.
 - `language` selects built-in interface copy. This example uses English; use `pt-BR` for Portuguese.
+- `repository.url` adds the external repository link to the site header; omit `repository` or set it to `null` to hide the link.
 - `colors` defines the light-theme tokens used by both screen and print.
 - `framework.runtime` is an advanced escape hatch for a customized runtime directory.
 

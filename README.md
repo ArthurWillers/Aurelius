@@ -2,6 +2,8 @@
 
 Aurelius is a local static documentation generator for people and agents. It turns versioned Markdown and diagram sources into an accessible static site, Markdown exports, and a structured JSON API. It does not require a database, hosted service, or a running server in production.
 
+[Source repository](https://github.com/ArthurWillers/Aurelius) · [Issue tracker](https://github.com/ArthurWillers/Aurelius/issues)
+
 ## Install
 
 Install Aurelius from a tagged GitHub release in the project that owns the documentation. This records the resolved revision in `package-lock.json`, so local work and CI use the same version:

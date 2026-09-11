@@ -2111,9 +2111,11 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
   const copy = messages(config);
   const byId = new Map(documents.map((document) => [document.id, document]));
   const repositoryUrl = config.repository?.url || "";
+  const repositoryLabel = escapeHtml(copy.repository);
   const repositoryLink = repositoryUrl
     ? '<a class="repo-link" href="' + escapeAttribute(repositoryUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="' + escapeAttribute(copy.repository) + '" title="' + escapeAttribute(copy.repository) + '"><svg viewBox="0 0 78 78" aria-hidden="true" focusable="false"><path fill="#f03c2e" transform="translate(10 10) rotate(-45 29 29)" d="M5,58c-2.76142,0 -5,-2.23858 -5,-5v-48c0,-2.76142 2.23858,-5 5,-5h33v12.54404c-2.06553,0.94801 -3.5,3.03446 -3.5,5.45596c0,0.73514 0.13221,1.43941 0.37415,2.09031l-15.28384,15.28384c-0.6509,-0.24194 -1.35517,-0.37415 -2.09031,-0.37415c-3.31371,0 -6,2.68629 -6,6c0,3.31371 2.68629,6 6,6c3.31371,0 6,-2.68629 6,-6c0,-0.73514 -0.13221,-1.43941 -0.37415,-2.09031l14.87415,-14.87415l0,11.50851c-2.06553,0.94801 -3.5,3.03446 -3.5,5.45596c0,3.31371 2.68629,6 6,6c3.31371,0 6,-2.68629 6,-6c0,-2.42149 -1.43447,-4.50795 -3.5,-5.45596l0,-12.08808c2.06553,-0.94801 3.5,-3.03446 3.5,-5.45596c0,-2.42149 -1.43447,-4.50795 -3.5,-5.45596l0,-12.54404h10c2.76142,0 5,2.23858 5,5v48c0,2.76142 -2.23858,5 -5,5z"></path></svg></a>'
     : "";
+  const visibleRepositoryLink = repositoryLink.replace("</svg></a>", "<span>" + repositoryLabel + "</span></a>");
   const navigationLabel = (document) => {
     const title = document.id === "home" ? copy.home : document.title;
     const prefix = typeof config.navigation?.labelPrefix === "string" ? config.navigation.labelPrefix : "";
@@ -2151,7 +2153,7 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
       escapeHtml(config.brand.kicker || config.framework?.name || "aurelius") +
       "</span></a>",
     '<nav class="nav" aria-label="' + escapeAttribute(copy.primaryNavigation) + '">' + links + "</nav>",
-    '<div class="masthead-tools">', repositoryLink,
+    '<div class="masthead-tools">', visibleRepositoryLink,
     '<div class="search"><label class="sr-only" for="site-search">' + escapeHtml(copy.search) + '</label><input id="site-search" data-search-input type="search" autocomplete="off" placeholder="' + escapeAttribute(copy.searchPlaceholder) + '" aria-controls="site-search-results" aria-expanded="false"><kbd>⌘ K</kbd><div id="site-search-results" class="search-results" data-search-results role="listbox"></div></div>',
     "</div>",
     "</header>",

@@ -1395,9 +1395,11 @@ html {
   color: var(--muted);
   display: inline-flex;
   flex: 0 0 auto;
+  gap: 7px;
   height: 34px;
   justify-content: center;
-  width: 34px;
+  padding: 0 10px;
+  text-decoration: none;
 }
 
 .repo-link:hover {
@@ -1408,6 +1410,13 @@ html {
 .repo-link svg {
   height: 17px;
   width: 17px;
+}
+
+.repo-link span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .search input {

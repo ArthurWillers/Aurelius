@@ -15,6 +15,8 @@ diagram: publication-flow
 
 Aurelius starts with versioned Markdown and JSON. One build publishes that knowledge as an accessible static site, recoverable Markdown, and a small JSON API for agents. Your content is not trapped in a CMS, database, or proprietary editor.
 
+The [Aurelius repository on GitHub](https://github.com/ArthurWillers/Aurelius) contains the generator, examples, tests, and the source for this documentation.
+
 {{diagram:publication-flow}}
 
 ## Install it and create your first site
