@@ -54,6 +54,7 @@ For a Mermaid `er` or `db-schema` diagram, `layout` is an optional, agent-editab
 - `waypoints` are the intermediate points only: the renderer always adds the configured ports as the first and last points and draws rounded orthogonal elbows.
 - `labelPlacement` and `cardinalityPlacement` give labels explicit masked positions. Keep a visible 6–10px gap from the connector and do not place a mask on a table.
 - In `db-schema`, the FK row already identifies the relationship, so connections retain arrowheads but omit repeated FK labels and cardinalities by default. Set `showLabel` and/or `showCardinality` to `true` on a relationship only when that annotation adds non-duplicative information.
+- In a state diagram, a state without outgoing transitions is rendered as terminal with an end marker. Keep only meaningful transitions in the Mermaid source; do not add a redundant `STATE --> [*]` line merely to mark a leaf as final.
 - `bridges` declare which relation visually passes over another at an unavoidable crossing. Prefer separate routes; a bridge is a fallback, not a substitute for overlapping paths.
 
 Use a 4px grid, distinct ports, and at least 12px between parallel routes. Do not route a connector behind a table that is not one of its endpoints. If a logical schema needs more than five tables or six foreign-key relations, split it into focused diagrams instead of relying on increasingly complex routes.

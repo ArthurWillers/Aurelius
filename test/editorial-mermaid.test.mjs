@@ -38,6 +38,7 @@ test("ER manual layout controls entity placement, field ports, routes, and label
   assert.match(svg, /L720 476/);
   assert.match(svg, /<rect x="80" y="80" width="320"/);
   assert.match(svg, /<rect x="720" y="400" width="320"/);
+  assert.match(svg, />TABLE<\/text>/, "database schemas identify boxes as tables");
   assert.ok((svg.match(/height="16"/g) || []).length >= 3, "relationship labels use opaque masks");
 });
 
@@ -83,4 +84,14 @@ test("long state lifecycles wrap into readable rows", async () => {
   assert.match(svg, /viewBox="0 0 1200 440"/);
   assert.match(svg, /<rect x="96" y="136" width="144" height="64"/, "the first state stays on the first row");
   assert.match(svg, /<rect x="96" y="292" width="144" height="64"/, "later states wrap to a second row");
+});
+
+test("leaf states receive a terminal marker without redundant terminal transitions", async () => {
+  const context = { window: {} };
+  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  const source = ["stateDiagram-v2", "  [*] --> Draft", "  Draft --> Approved"].join("\n");
+  const svg = context.window.AureliusEditorial.render(source, "state", "", {});
+
+  assert.match(svg, /fill="rgba\(45,49,66,\.04\)"/, "a leaf state is visually terminal");
+  assert.match(svg, /r="8" fill="none" stroke="#4f5d75"/, "a leaf state gets an end marker");
 });
