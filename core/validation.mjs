@@ -61,6 +61,42 @@ function validateERLayout(diagram) {
   }
 }
 
+function validateStateLayout(diagram) {
+  if (diagram.layout === undefined) return;
+  if (!plainObject(diagram.layout) || diagram.kind !== "state" || !diagram._mermaid) throw new Error("layout é suportado apenas em diagramas Mermaid state, er e db-schema: " + diagram.sourcePath);
+  const canvas = diagram.layout.canvas || { width: Number(diagram.presentation?.width) || 1200, height: Number(diagram.presentation?.height) || 760 };
+  if (!plainObject(canvas) || !Number.isFinite(canvas.width) || !Number.isFinite(canvas.height) || canvas.width < 640 || canvas.width > 3200 || canvas.height < 280 || canvas.height > 2000) throw new Error("layout.canvas precisa ter width 640–3200 e height 280–2000 em " + diagram.sourcePath);
+  const states = new Set(), transitions = [];
+  for (const line of diagram._mermaid.split(/\r?\n/)) {
+    const match = line.match(/^\s*([^:\s]+)\s*-->\s*([^:\s]+)(?:\s*:\s*(.+))?/);
+    if (!match) continue;
+    for (const id of [match[1], match[2]]) if (id !== "[*]") states.add(id);
+    transitions.push({ from: match[1], to: match[2], label: (match[3] || "").trim() });
+  }
+  if (diagram.layout.states !== undefined) {
+    if (!plainObject(diagram.layout.states)) throw new Error("layout.states precisa ser objeto em " + diagram.sourcePath);
+    for (const [id, state] of Object.entries(diagram.layout.states)) {
+      if (!states.has(id)) throw new Error("layout.states." + id + " não corresponde a um estado Mermaid em " + diagram.sourcePath);
+      layoutPoint(state, "layout.states." + id, diagram, canvas);
+      if (state.width !== undefined && (!Number.isFinite(state.width) || state.width < 120 || state.width > 480)) throw new Error("layout.states." + id + ".width precisa ficar entre 120–480 em " + diagram.sourcePath);
+      if (state.height !== undefined && (!Number.isFinite(state.height) || state.height < 48 || state.height > 160)) throw new Error("layout.states." + id + ".height precisa ficar entre 48–160 em " + diagram.sourcePath);
+    }
+  }
+  if (diagram.layout.transitions === undefined) return;
+  if (!Array.isArray(diagram.layout.transitions)) throw new Error("layout.transitions precisa ser lista em " + diagram.sourcePath);
+  for (const [index, transition] of diagram.layout.transitions.entries()) {
+    const label = "layout.transitions[" + index + "]";
+    if (!plainObject(transition) || typeof transition.from !== "string" || typeof transition.to !== "string") throw new Error(label + " precisa declarar from e to em " + diagram.sourcePath);
+    if (!transitions.some((item) => item.from === transition.from && item.to === transition.to && (transition.label === undefined || item.label === transition.label))) throw new Error(label + " não corresponde a uma transição Mermaid em " + diagram.sourcePath);
+    for (const side of ["fromSide", "toSide"]) if (transition[side] !== undefined && !["left", "right", "top", "bottom"].includes(transition[side])) throw new Error(label + "." + side + " é inválido em " + diagram.sourcePath);
+    if (transition.waypoints !== undefined) {
+      if (!Array.isArray(transition.waypoints) || transition.waypoints.length > 20) throw new Error(label + ".waypoints aceita até 20 pontos em " + diagram.sourcePath);
+      transition.waypoints.forEach((point, pointIndex) => layoutPoint(point, label + ".waypoints[" + pointIndex + "]", diagram, canvas));
+    }
+    if (transition.labelPlacement !== undefined) layoutPoint(transition.labelPlacement, label + ".labelPlacement", diagram, canvas);
+  }
+}
+
 export async function validate(documents, diagrams, config, siteRoot) {
   const documentIds = new Set();
   const diagramIds = new Set();
@@ -147,7 +183,8 @@ export async function validate(documents, diagrams, config, siteRoot) {
     if (declarative && (!diagram.summary || diagram.summary.trim().length < 24)) throw new Error("Fonte declarativa precisa de summary com pelo menos 24 caracteres em " + diagram.sourcePath);
     if (declarative && diagram.interactive) throw new Error("Fonte Mermaid não aceita interactive: true; interações executáveis são bloqueadas em " + diagram.sourcePath);
     if (diagram.data !== undefined && diagram.data !== null && typeof diagram.data !== "object") throw new Error("data precisa ser objeto, lista ou null em " + diagram.sourcePath);
-    validateERLayout(diagram);
+    if (diagram.kind === "state") validateStateLayout(diagram);
+    else validateERLayout(diagram);
     for (const reference of diagram.sourceRefs || []) {
       if (/^https?:\/\//i.test(reference)) continue;
       await ensureExists(path.resolve(siteRoot, reference), "Referência de origem ausente no diagrama " + diagram.id + ": " + reference);

@@ -491,8 +491,9 @@ test("section extraction, clean preview routes, and generated schemas share the 
   assert.equal(diagramSchema.properties.nodes.items.$ref, "#/$defs/node");
   assert.equal(diagramSchema.properties.edges.items.$ref, "#/$defs/edge");
   assert.equal(diagramSchema.$defs.presentation.required.includes("width"), true);
-  assert.equal(diagramSchema.properties.layout.$ref, "#/$defs/erLayout");
+  assert.deepEqual(diagramSchema.properties.layout.anyOf, [{ $ref: "#/$defs/erLayout" }, { $ref: "#/$defs/stateLayout" }]);
   assert.equal(diagramSchema.$defs.erRelationshipLayout.properties.waypoints.items.$ref, "#/$defs/layoutPoint");
+  assert.equal(diagramSchema.$defs.stateTransitionLayout.properties.waypoints.items.$ref, "#/$defs/layoutPoint");
 
   const site = await createSite();
   context.after(async () => rm(site, { recursive: true, force: true }));

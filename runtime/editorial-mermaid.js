@@ -116,10 +116,21 @@
     return svg("0 0 1200 488", body);
   }
   function parseState(source) { var edges = [], states = []; source.split(/\n/).forEach(function (line) { var match = line.match(/^\s*([^:\s]+)\s*-->\s*([^:\s]+)(?:\s*:\s*(.+))?/); if (match) { edges.push({ from: match[1], to: match[2], label: (match[3] || "").trim() }); [match[1], match[2]].forEach(function (id) { if (id !== "[*]" && !states.includes(id)) states.push(id); }); } }); return states.length ? { states: states, edges: edges } : null; }
-  function renderState(source, focus) {
+  function stateTransitionLayout(layout, edge) {
+    var transitions = Array.isArray(layout?.transitions) ? layout.transitions : [];
+    return transitions.find(function (item) { return item && item.from === edge.from && item.to === edge.to && (item.label === undefined || item.label === edge.label); }) || null;
+  }
+  function statePort(node, side) {
+    if (side === "left") return { x: node.x, y: node.y + node.h / 2 };
+    if (side === "right") return { x: node.x + node.w, y: node.y + node.h / 2 };
+    if (side === "top") return { x: node.x + node.w / 2, y: node.y };
+    return { x: node.x + node.w / 2, y: node.y + node.h };
+  }
+  function renderState(source, focus, layout) {
     var data = parseState(source); if (!data) return null;
-    var count = data.states.length, columns = count > 6 ? 4 : count, rows = Math.ceil(count / columns), width = 144, height = 64, x0 = 96, xGap = columns > 1 ? (1104 - columns * width) / (columns - 1) : 0, y0 = rows > 1 ? 136 : 164, yGap = 156, nodes = {}, viewHeight = rows > 1 ? 440 : 320;
-    data.states.forEach(function (state, index) { var column = index % columns, row = Math.floor(index / columns); nodes[state] = { x: x0 + column * (width + xGap), y: y0 + row * yGap, w: width, h: height, row: row }; });
+    layout = layout || {};
+    var count = data.states.length, columns = count > 6 ? 4 : count, rows = Math.ceil(count / columns), width = 144, height = 64, x0 = 96, xGap = columns > 1 ? (1104 - columns * width) / (columns - 1) : 0, y0 = rows > 1 ? 136 : 164, yGap = 156, nodes = {}, viewHeight = rows > 1 ? 440 : 320, configuredStates = layout.states || {};
+    data.states.forEach(function (state, index) { var column = index % columns, row = Math.floor(index / columns), configured = configuredStates[state] || {}; nodes[state] = { x: Number.isFinite(configured.x) ? configured.x : x0 + column * (width + xGap), y: Number.isFinite(configured.y) ? configured.y : y0 + row * yGap, w: Number.isFinite(configured.width) ? configured.width : width, h: Number.isFinite(configured.height) ? configured.height : height, row: row }; });
     var body = '<text x="72" y="48" fill="' + C.ink + '" font-family="Geist,Inter,sans-serif" font-size="16" font-weight="600">Editorial document lifecycle</text>', incoming = {}, outgoing = {};
     data.edges.forEach(function (edge) { if (edge.from !== "[*]") (outgoing[edge.from] ||= []).push(edge); if (edge.to !== "[*]") (incoming[edge.to] ||= []).push(edge); });
     data.edges.forEach(function (edge) {
@@ -133,8 +144,12 @@
         return;
       }
       if (!from || !to) return;
-      var route, label;
-      if (from.row === to.row && from.x < to.x) {
+      var configured = stateTransitionLayout(layout, edge), route, label;
+      if (configured) {
+        var sourceSide = configured.fromSide || (from.x <= to.x ? "right" : "left"), targetSide = configured.toSide || (from.x <= to.x ? "left" : "right"), start = statePort(from, sourceSide), end = statePort(to, targetSide);
+        route = orthogonalRoute([start].concat(configured.waypoints || []).concat([end]), sourceSide);
+        label = configured.labelPlacement || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 - 16 };
+      } else if (from.row === to.row && from.x < to.x) {
         route = [{ x: from.x + from.w, y: from.y + height / 2 }, { x: to.x, y: to.y + height / 2 }];
         label = { x: (from.x + from.w + to.x) / 2, y: from.y + 12 };
       } else if (from.row < to.row) {
@@ -153,7 +168,7 @@
       body += '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="8" fill="' + (focal ? C.accentTint : (terminal ? "rgba(45,49,66,.04)" : C.white)) + '" stroke="' + (focal ? C.accent : (terminal ? C.muted : C.ink)) + '" stroke-width="1.2"/>' + text(node.x + node.w / 2, node.y + 30, state, { size: 11, weight: 600, anchor: "middle", wrap: 18 });
       if (terminal) body += '<circle cx="' + (node.x + node.w + 24) + '" cy="' + (node.y + node.h / 2) + '" r="8" fill="none" stroke="' + C.muted + '"/><circle cx="' + (node.x + node.w + 24) + '" cy="' + (node.y + node.h / 2) + '" r="4" fill="' + C.muted + '"/>';
     });
-    return svg("0 0 1200 " + viewHeight, body);
+    return svg("0 0 " + (Number.isFinite(layout.canvas?.width) ? layout.canvas.width : 1200) + " " + (Number.isFinite(layout.canvas?.height) ? layout.canvas.height : viewHeight), body);
   }
   function parseFlow(source) { var labels = {}, edges = [], group = null, groups = {}; source.split(/\n/).forEach(function (line) { var sub = line.match(/^\s*subgraph\s+(.+)/i), end = /^\s*end\s*$/i.test(line), edge = line.match(/^\s*([\w-]+)(?:\[[^\]]*\]|\{[^}]*\}|\([^)]*\))?\s*(?:--\s*([^>-]+?)\s*)?--?>\s*([\w-]+)/); if (sub) { group = sub[1].trim(); groups[group] = groups[group] || []; } else if (end) group = null; var nodes = line.matchAll(/\b([\w-]+)(?:\[([^\]]+)\]|\{([^}]+)\}|\(\[([^\]]+)\]\))/g); for (var match of nodes) { labels[match[1]] = (match[2] || match[3] || match[4] || labels[match[1]] || match[1]).trim(); if (group && !groups[group].includes(match[1])) groups[group].push(match[1]); } if (edge) edges.push({ from: edge[1], to: edge[3], label: (edge[2] || "").trim() }); }); return { labels: labels, edges: edges, groups: groups }; }
   function renderDependency(source) {
@@ -432,5 +447,5 @@
     var maxRight = Math.max.apply(null, boxes.map(function (box) { return box.x + box.w; })), maxBottom = Math.max.apply(null, boxes.map(function (box) { return box.y + box.h; })), canvasWidth = Number.isFinite(layout.canvas?.width) ? layout.canvas.width : Math.max(1200, maxRight + 80), canvasHeight = Number.isFinite(layout.canvas?.height) ? layout.canvas.height : Math.max(760, maxBottom + 80);
     return svg("0 0 " + canvasWidth + " " + canvasHeight, body);
   }
-  window.AureliusEditorial = { render: function (source, kind, focus, analysis, layout) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis, layout, kind); return null; } };
+  window.AureliusEditorial = { render: function (source, kind, focus, analysis, layout) { if (kind === "line" || kind === "bar" || kind === "waterfall") return renderLine(source); if (kind === "journey") return renderJourney(source, focus); if (kind === "state") return renderState(source, focus, layout); if (kind === "dependency") return renderDependency(source, focus); if (kind === "er" || kind === "db-schema") return renderER(source, focus, analysis, layout, kind); return null; } };
 })();

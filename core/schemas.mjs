@@ -94,7 +94,7 @@ export function diagramSchema() {
       mermaidType: nonEmptyString,
       declarativeAnalysis: { $ref: "#/$defs/declarativeAnalysis" },
       presentation: { $ref: "#/$defs/presentation" },
-      layout: { $ref: "#/$defs/erLayout" },
+      layout: { anyOf: [{ $ref: "#/$defs/erLayout" }, { $ref: "#/$defs/stateLayout" }] },
       data: { type: ["object", "array", "null"] },
       width: { type: "number" },
       height: { type: "number" },
@@ -215,6 +215,16 @@ export function diagramSchema() {
           },
         },
       },
+      stateLayout: {
+        type: "object",
+        description: "Optional manual layout for declarative state diagrams.",
+        additionalProperties: false,
+        properties: {
+          canvas: { $ref: "#/$defs/layoutCanvas" },
+          states: { type: "object", additionalProperties: { $ref: "#/$defs/stateNodeLayout" } },
+          transitions: { type: "array", items: { $ref: "#/$defs/stateTransitionLayout" } },
+        },
+      },
       layoutCanvas: {
         type: "object",
         additionalProperties: false,
@@ -232,6 +242,17 @@ export function diagramSchema() {
           x: { type: "number", minimum: 0, maximum: 3200 },
           y: { type: "number", minimum: 0, maximum: 2000 },
           width: { type: "number", minimum: 160, maximum: 640 },
+        },
+      },
+      stateNodeLayout: {
+        type: "object",
+        additionalProperties: false,
+        required: ["x", "y"],
+        properties: {
+          x: { type: "number", minimum: 0, maximum: 3200 },
+          y: { type: "number", minimum: 0, maximum: 2000 },
+          width: { type: "number", minimum: 120, maximum: 480 },
+          height: { type: "number", minimum: 48, maximum: 160 },
         },
       },
       erRelationshipLayout: {
@@ -264,6 +285,20 @@ export function diagramSchema() {
           field: nonEmptyString,
           offset: { type: "number", minimum: 0, maximum: 1 },
           fieldOffset: { type: "number", minimum: -8, maximum: 8 },
+        },
+      },
+      stateTransitionLayout: {
+        type: "object",
+        additionalProperties: false,
+        required: ["from", "to"],
+        properties: {
+          from: nonEmptyString,
+          to: nonEmptyString,
+          label: { type: "string" },
+          fromSide: { enum: ["left", "right", "top", "bottom"] },
+          toSide: { enum: ["left", "right", "top", "bottom"] },
+          waypoints: { type: "array", maxItems: 20, items: { $ref: "#/$defs/layoutPoint" } },
+          labelPlacement: { $ref: "#/$defs/layoutPoint" },
         },
       },
       layoutPoint: {

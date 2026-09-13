@@ -95,3 +95,19 @@ test("leaf states receive a terminal marker without redundant terminal transitio
   assert.match(svg, /fill="rgba\(45,49,66,\.04\)"/, "a leaf state is visually terminal");
   assert.match(svg, /r="8" fill="none" stroke="#4f5d75"/, "a leaf state gets an end marker");
 });
+
+test("state layouts control positions and orthogonal transition routes", async () => {
+  const context = { window: {} };
+  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  const source = ["stateDiagram-v2", "  [*] --> Draft", "  Draft --> Published: release"].join("\n");
+  const svg = context.window.AureliusEditorial.render(source, "state", "", {}, {
+    canvas: { width: 960, height: 480 },
+    states: { Draft: { x: 80, y: 120 }, Published: { x: 520, y: 120 } },
+    transitions: [{ from: "Draft", to: "Published", label: "release", fromSide: "right", toSide: "left", labelPlacement: { x: 372, y: 96 } }],
+  });
+
+  assert.match(svg, /viewBox="0 0 960 480"/);
+  assert.match(svg, /<rect x="80" y="120" width="144" height="64"/);
+  assert.match(svg, /<path d="M224 152 L520 152"/);
+  assert.match(svg, />release<\/text>/);
+});
