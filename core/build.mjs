@@ -1009,13 +1009,13 @@ function mermaidLegendItems(diagram, config) {
     ? {
         node: "Node", focal: "Focal", connection: "Connection", step: "Step", decision: "Decision", outcome: "Outcome",
         actor: "Actor", request: "Request", response: "Response", alternative: "Alternative", state: "State", transition: "Transition", terminal: "Terminal",
-        entity: "Entity", primaryKey: "Primary key", foreignKey: "Foreign key", relationship: "Relationship", class: "Class", interface: "Interface", inheritance: "Inheritance", composition: "Composition",
+        entity: "Entity", table: "Table", primaryKey: "Primary key", foreignKey: "Foreign key", relationship: "Relationship", class: "Class", interface: "Interface", inheritance: "Inheritance", composition: "Composition",
         series: "Series", axis: "Axis", task: "Task", milestone: "Milestone", completed: "Completed", active: "Active", stage: "Stage", score: "Score", group: "Group", dependency: "Dependency", item: "Item", aggregation: "Aggregation",
       }
     : {
         node: "Nó", focal: "Foco", connection: "Conexão", step: "Etapa", decision: "Decisão", outcome: "Resultado",
         actor: "Ator", request: "Requisição", response: "Resposta", alternative: "Alternativa", state: "Estado", transition: "Transição", terminal: "Terminal",
-        entity: "Entidade", primaryKey: "Chave primária", foreignKey: "Chave estrangeira", relationship: "Relacionamento", class: "Classe", interface: "Interface", inheritance: "Herança", composition: "Composição",
+        entity: "Entidade", table: "Tabela", primaryKey: "Chave primária", foreignKey: "Chave estrangeira", relationship: "Relacionamento", class: "Classe", interface: "Interface", inheritance: "Herança", composition: "Composição",
         series: "Série", axis: "Eixo", task: "Tarefa", milestone: "Marco", completed: "Concluída", active: "Ativa", stage: "Etapa", score: "Pontuação", group: "Grupo", dependency: "Dependência", item: "Item", aggregation: "Agregação",
       };
   const roleItems = {
@@ -1023,12 +1023,12 @@ function mermaidLegendItems(diagram, config) {
     step: ["box", labels.step], decision: ["decision", labels.decision], outcome: ["terminal", labels.outcome],
     actor: ["actor", labels.actor], request: ["arrow", labels.request], response: ["dashed", labels.response], alternative: ["group", labels.alternative],
     state: ["box", labels.state], transition: ["arrow", labels.transition], terminal: ["terminal", labels.terminal],
-    entity: ["entity", labels.entity], "primary-key": ["pk", labels.primaryKey], "foreign-key": ["fk", labels.foreignKey], relationship: ["relation", labels.relationship],
+    entity: ["entity", labels.entity], table: ["entity", labels.table], "primary-key": ["pk", labels.primaryKey], "foreign-key": ["fk", labels.foreignKey], relationship: ["relation", labels.relationship],
     class: ["class", labels.class], interface: ["interface", labels.interface], inheritance: ["inheritance", labels.inheritance], composition: ["composition", labels.composition], aggregation: ["relation", labels.aggregation],
     series: ["series", labels.series], axis: ["axis", labels.axis], task: ["task", labels.task], milestone: ["milestone", labels.milestone], completed: ["completed", labels.completed], active: ["active", labels.active],
     stage: ["group", labels.stage], score: ["score", labels.score], group: ["group", labels.group], dependency: ["arrow", labels.dependency], item: ["point", labels.item],
   };
-  const analyzedRoles = [...(diagram.declarativeAnalysis?.roles || [])];
+  const analyzedRoles = [...(diagram.declarativeAnalysis?.roles || [])].map((role) => diagram.kind === "db-schema" && role === "entity" ? "table" : role);
   if ((diagram.data?.focus || diagram.data?.aggregateRoot) && !analyzedRoles.includes("focal")) analyzedRoles.push("focal");
   const analyzed = analyzedRoles.map((role) => roleItems[role]).filter(Boolean);
   if (analyzed.length) return analyzed;
@@ -1037,7 +1037,7 @@ function mermaidLegendItems(diagram, config) {
     sequence: [["actor", labels.actor], ["arrow", labels.request], ["dashed", labels.response], ["group", labels.alternative]],
     state: [["box", labels.state], ["arrow", labels.transition], ["terminal", labels.terminal], ["focal", labels.focal]],
     er: [["entity", labels.entity], ["pk", labels.primaryKey], ["fk", labels.foreignKey], ["relation", labels.relationship]],
-    "db-schema": [["entity", labels.entity], ["pk", labels.primaryKey], ["fk", labels.foreignKey], ["relation", labels.relationship]],
+    "db-schema": [["entity", labels.table], ["pk", labels.primaryKey], ["fk", labels.foreignKey], ["relation", labels.relationship]],
     "uml-class": [["class", labels.class], ["interface", labels.interface], ["inheritance", labels.inheritance], ["composition", labels.composition]],
     line: [["series", labels.series], ["axis", labels.axis], ["focal", labels.focal]],
     bar: [["series", labels.series], ["axis", labels.axis], ["focal", labels.focal]],

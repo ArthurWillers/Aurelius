@@ -82,6 +82,7 @@ test("long state lifecycles wrap into readable rows", async () => {
   const svg = context.window.AureliusEditorial.render(source, "state", "", {});
 
   assert.match(svg, /viewBox="0 0 1200 440"/);
+  assert.doesNotMatch(svg, /Editorial document lifecycle/, "the page title, not a generic English heading, names the state diagram");
   assert.match(svg, /<rect x="96" y="136" width="144" height="64"/, "the first state stays on the first row");
   assert.match(svg, /<rect x="96" y="292" width="144" height="64"/, "later states wrap to a second row");
 });

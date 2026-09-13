@@ -131,7 +131,7 @@
     layout = layout || {};
     var count = data.states.length, columns = count > 6 ? 4 : count, rows = Math.ceil(count / columns), width = 144, height = 64, x0 = 96, xGap = columns > 1 ? (1104 - columns * width) / (columns - 1) : 0, y0 = rows > 1 ? 136 : 164, yGap = 156, nodes = {}, viewHeight = rows > 1 ? 440 : 320, configuredStates = layout.states || {};
     data.states.forEach(function (state, index) { var column = index % columns, row = Math.floor(index / columns), configured = configuredStates[state] || {}; nodes[state] = { x: Number.isFinite(configured.x) ? configured.x : x0 + column * (width + xGap), y: Number.isFinite(configured.y) ? configured.y : y0 + row * yGap, w: Number.isFinite(configured.width) ? configured.width : width, h: Number.isFinite(configured.height) ? configured.height : height, row: row }; });
-    var body = '<text x="72" y="48" fill="' + C.ink + '" font-family="Geist,Inter,sans-serif" font-size="16" font-weight="600">Editorial document lifecycle</text>', incoming = {}, outgoing = {};
+    var body = "", incoming = {}, outgoing = {};
     data.edges.forEach(function (edge) { if (edge.from !== "[*]") (outgoing[edge.from] ||= []).push(edge); if (edge.to !== "[*]") (incoming[edge.to] ||= []).push(edge); });
     data.edges.forEach(function (edge) {
       var focal = String(focus || "").toLowerCase() === edge.to.toLowerCase(), from = nodes[edge.from], to = nodes[edge.to], style = { accent: focal };
