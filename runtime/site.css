@@ -354,7 +354,9 @@ h3 {
 
 .prose p {
   margin: 0 0 18px;
-  max-width: 760px;
+  max-width: 960px;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 .prose ul {
