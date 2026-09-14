@@ -235,7 +235,7 @@
   function selectNode(node) {
     canvas.querySelectorAll(".canvas-node").forEach(function (item) { item.classList.toggle("is-active", item === node); });
     if (detailTitle) detailTitle.textContent = node.dataset.title;
-    if (detailSummary) detailSummary.textContent = node.dataset.summary;
+    if (detailSummary) detailSummary.textContent = node.dataset.detail || node.dataset.summary;
   }
   var dragMoved = false;
   canvas.querySelectorAll(".canvas-node").forEach(function (node) {
@@ -296,29 +296,6 @@
     if (event.ctrlKey || event.metaKey) {
       event.preventDefault();
       applyZoom(zoom + (event.deltaY < 0 ? 0.2 : -0.2), event.clientX, event.clientY);
-      return;
-    }
-    if (zoom !== 1) {
-      var current = canvas.getAttribute("viewBox").split(" ").map(Number);
-      var bounds = canvas.getBoundingClientRect();
-      var dx = event.deltaX * current[2] / bounds.width;
-      var dy = event.deltaY * current[3] / bounds.height;
-      var next = clampViewBoxPosition(current[0] + dx, current[1] + dy, current[2], current[3]);
-      if (next[0] !== current[0] || next[1] !== current[1]) {
-        event.preventDefault();
-        setViewBox(next);
-      }
-      return;
-    }
-    if (canvasScroll.scrollWidth > canvasScroll.clientWidth) {
-      var horizontalDelta = event.deltaX || event.deltaY;
-      var canMove = horizontalDelta < 0
-        ? canvasScroll.scrollLeft > 0
-        : canvasScroll.scrollLeft < canvasScroll.scrollWidth - canvasScroll.clientWidth - 1;
-      if (canMove) {
-        event.preventDefault();
-        canvasScroll.scrollLeft += horizontalDelta;
-      }
     }
   }, { passive: false });
   if (canvasShell) canvasShell.querySelectorAll("[data-canvas-control]").forEach(function (button) {

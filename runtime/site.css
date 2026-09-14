@@ -1099,7 +1099,12 @@ h3 {
 .canvas-scroll {
   max-width: 100%;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.canvas-shell:not(.canvas-shell--standalone) .canvas-scroll {
+  max-height: min(68vh, 720px);
 }
 
 .canvas-scroll svg {
@@ -1147,6 +1152,12 @@ h3 {
 
 .canvas-detail p {
   margin: 0;
+}
+
+.canvas-detail [data-canvas-detail-summary] {
+  max-width: 84ch;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .canvas-detail .eyebrow {

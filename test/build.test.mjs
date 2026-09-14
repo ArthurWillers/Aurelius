@@ -178,9 +178,11 @@ test("build emits human, Markdown, and agent-readable projections", async (conte
   assert.equal(JSON.parse(searchApi).find((entry) => entry.id === "flow").visuals[0].summary, "Build minutes split between verification and release outcomes.");
   assert.match(html, /data-canvas-zoom|Math\.max\(0\.4, zoom - 0\.2\)/);
   assert.match(html, /function selectNode\(node\)/);
+  assert.match(html, /dataset\.detail \|\| node\.dataset\.summary/);
   assert.doesNotMatch(html, /function focusNode\(node\)/);
   assert.match(html, /if \(selectedNode\) selectNode\(selectedNode\)/);
   assert.match(html, /addEventListener\("wheel"/);
+  assert.doesNotMatch(html, /canvasScroll\.scrollLeft \+=/);
   assert.match(html, /querySelectorAll\("\[data-canvas\]"\)/);
   assert.match(html, /canvases\.forEach/);
   assert.equal((guideHtml.match(/data-renderer-kind=/g) || []).length, 41);

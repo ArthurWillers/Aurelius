@@ -375,12 +375,16 @@ function canvasTextContent(value, fallback) {
   const lines = String(value || "").split(/\r?\n/).map((line) => line.trim());
   const heading = lines.find((line) => /^#{1,6}\s+/.test(line));
   const title = heading ? heading.replace(/^#{1,6}\s+/, "") : lines.find(Boolean) || fallback;
-  const summary = lines
+  const detail = lines
     .filter((line) => line && line !== heading)
-    .join(" ")
+    .join("\n")
     .replace(/[*_`>#]/g, "")
     .trim();
-  return { title, summary: summary || "No additional description." };
+  return {
+    title,
+    summary: detail.replace(/\s+/g, " ").trim() || "No additional description.",
+    detail: detail || "No additional description.",
+  };
 }
 
 function normalizeCanvasDiagram(diagram) {
@@ -395,6 +399,7 @@ function normalizeCanvasDiagram(diagram) {
       kind: node.kind || (node.shape === "diamond" ? "decision" : "step"),
       title: node.title || node.label || content.title,
       summary: node.summary || content.summary,
+      detail: node.detail || content.detail,
     };
   });
   const allBoxes = [...groups, ...nodes];
@@ -818,6 +823,8 @@ function canvasNodeSvg(node, colors, copy) {
       escapeAttribute(node.title) +
       '" data-summary="' +
       escapeAttribute(node.summary) +
+      '" data-detail="' +
+      escapeAttribute(node.detail || node.summary) +
       '">',
     '<rect x="' +
       node.x +
