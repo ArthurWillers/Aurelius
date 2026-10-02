@@ -158,7 +158,7 @@
         return;
       }
       var svg = container.querySelector("svg");
-      copy(svg ? svg.outerHTML : "", messages.svgCopied || "SVG copied.", button);
+      copy(svg ? window.AureliusDiagramViewport.exportSvg(svg) : "", messages.svgCopied || "SVG copied.", button);
     });
   });
   document.querySelectorAll("[data-copy-mermaid]").forEach(function (button) {
@@ -205,106 +205,32 @@
     tocLinks.forEach(function (link) { var section = document.getElementById(link.hash.slice(1)); if (section) observer.observe(section); });
   }
 
-  var canvases = document.querySelectorAll("[data-canvas]");
-  if (!canvases.length) return;
-  canvases.forEach(function (canvas) {
-  var canvasShell = canvas.closest("[data-canvas-shell]");
-  var detailTitle = canvasShell ? canvasShell.querySelector("[data-canvas-detail-title]") : null;
-  var detailSummary = canvasShell ? canvasShell.querySelector("[data-canvas-detail-summary]") : null;
-  var zoomOutput = canvasShell ? canvasShell.querySelector("[data-canvas-zoom]") : null;
-  var defaultViewBox = canvas.getAttribute("viewBox").split(" ").map(Number);
-  var zoom = 1;
-  function setViewBox(next) { canvas.setAttribute("viewBox", next.join(" ")); }
-  function updateZoomOutput() { if (zoomOutput) zoomOutput.textContent = Math.round(zoom * 100) + "%"; }
-  function clampViewBoxPosition(x, y, width, height) {
-    var minX = Math.min(defaultViewBox[0], defaultViewBox[0] + defaultViewBox[2] - width);
-    var maxX = Math.max(defaultViewBox[0], defaultViewBox[0] + defaultViewBox[2] - width);
-    var minY = Math.min(defaultViewBox[1], defaultViewBox[1] + defaultViewBox[3] - height);
-    var maxY = Math.max(defaultViewBox[1], defaultViewBox[1] + defaultViewBox[3] - height);
-    return [Math.max(minX, Math.min(maxX, x)), Math.max(minY, Math.min(maxY, y)), width, height];
-  }
-  function resetCanvas() { zoom = 1; setViewBox(defaultViewBox); updateZoomOutput(); canvas.querySelectorAll(".canvas-node").forEach(function (node) { node.classList.remove("is-active"); }); }
-  function setFullscreenPressed(value) { if (canvasShell) canvasShell.querySelectorAll('[data-canvas-control="full"]').forEach(function (button) { button.setAttribute("aria-pressed", value ? "true" : "false"); button.textContent = value ? (messages.closeFullscreen || "Exit fullscreen") : (messages.fullscreen || "Fullscreen"); }); }
-  function toggleFullscreen() {
-    if (!canvasShell) return;
-    if (document.fullscreenElement) { document.exitFullscreen(); return; }
-    if (canvasShell.requestFullscreen) { canvasShell.requestFullscreen().catch(function () { canvasShell.classList.toggle("is-expanded"); setFullscreenPressed(canvasShell.classList.contains("is-expanded")); }); return; }
-    canvasShell.classList.toggle("is-expanded"); setFullscreenPressed(canvasShell.classList.contains("is-expanded"));
-  }
-  document.addEventListener("fullscreenchange", function () { setFullscreenPressed(document.fullscreenElement === canvasShell); });
-  function selectNode(node) {
-    canvas.querySelectorAll(".canvas-node").forEach(function (item) { item.classList.toggle("is-active", item === node); });
-    if (detailTitle) detailTitle.textContent = node.dataset.title;
-    if (detailSummary) detailSummary.textContent = node.dataset.detail || node.dataset.summary;
-  }
-  var dragMoved = false;
-  canvas.querySelectorAll(".canvas-node").forEach(function (node) {
-    node.addEventListener("click", function () { if (!dragMoved) selectNode(node); });
-    node.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectNode(node); } });
+  var printedDetails = [];
+  window.addEventListener("beforeprint", function () {
+    document.querySelectorAll("details.mermaid-summary:not([open])").forEach(function (details) { printedDetails.push(details); details.open = true; });
   });
-  var canvasScroll = canvas.closest(".canvas-scroll");
-  var drag = null;
-  canvas.addEventListener("pointerdown", function (event) {
-    var current = canvas.getAttribute("viewBox").split(" ").map(Number);
-    dragMoved = false;
-    drag = {
-      pointerId: event.pointerId, x: event.clientX, y: event.clientY, viewBox: current,
-      node: event.target.closest ? event.target.closest(".canvas-node") : null,
-      scrollLeft: canvasScroll ? canvasScroll.scrollLeft : 0,
-      scrollTop: canvasScroll ? canvasScroll.scrollTop : 0
-    };
-    canvas.setPointerCapture(event.pointerId);
-    canvas.classList.add("is-panning");
-  });
-  canvas.addEventListener("pointermove", function (event) {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    var pixelX = event.clientX - drag.x, pixelY = event.clientY - drag.y;
-    if (Math.hypot(pixelX, pixelY) < 4) return;
-    dragMoved = true;
-    if (zoom === 1 && canvasScroll && (canvasScroll.scrollWidth > canvasScroll.clientWidth || canvasScroll.scrollHeight > canvasScroll.clientHeight)) {
-      canvasScroll.scrollLeft = drag.scrollLeft - pixelX;
-      canvasScroll.scrollTop = drag.scrollTop - pixelY;
-      return;
-    }
-    var bounds = canvas.getBoundingClientRect();
-    var dx = pixelX * drag.viewBox[2] / bounds.width;
-    var dy = pixelY * drag.viewBox[3] / bounds.height;
-    setViewBox(clampViewBoxPosition(drag.viewBox[0] - dx, drag.viewBox[1] - dy, drag.viewBox[2], drag.viewBox[3]));
-  });
-  function stopPanning(event) {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    var selectedNode = event.type === "pointerup" && !dragMoved ? drag.node : null;
-    drag = null;
-    canvas.classList.remove("is-panning");
-    if (selectedNode) selectNode(selectedNode);
-    window.setTimeout(function () { dragMoved = false; }, 0);
-  }
-  canvas.addEventListener("pointerup", stopPanning);
-  canvas.addEventListener("pointercancel", stopPanning);
-  function applyZoom(nextZoom, clientX, clientY) {
-    var current = canvas.getAttribute("viewBox").split(" ").map(Number);
-    var bounds = canvas.getBoundingClientRect();
-    var ratioX = clientX == null ? 0.5 : Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
-    var ratioY = clientY == null ? 0.5 : Math.max(0, Math.min(1, (clientY - bounds.top) / bounds.height));
-    var anchorX = current[0] + current[2] * ratioX, anchorY = current[1] + current[3] * ratioY;
-    zoom = Math.max(0.4, Math.min(3, nextZoom));
-    var width = defaultViewBox[2] / zoom, height = defaultViewBox[3] / zoom;
-    setViewBox(clampViewBoxPosition(anchorX - width * ratioX, anchorY - height * ratioY, width, height));
-    updateZoomOutput();
-  }
-  if (canvasScroll) canvasScroll.addEventListener("wheel", function (event) {
-    if (event.ctrlKey || event.metaKey) {
-      event.preventDefault();
-      applyZoom(zoom + (event.deltaY < 0 ? 0.2 : -0.2), event.clientX, event.clientY);
-    }
-  }, { passive: false });
-  if (canvasShell) canvasShell.querySelectorAll("[data-canvas-control]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      var action = button.dataset.canvasControl;
-      if (action === "reset") return resetCanvas();
-      if (action === "full") return toggleFullscreen();
-      applyZoom(zoom + (action === "in" ? 0.2 : -0.2));
+  window.addEventListener("afterprint", function () { printedDetails.forEach(function (details) { details.open = false; }); printedDetails = []; });
+
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () {
+    document.querySelectorAll("[data-native-diagram]").forEach(function (shell) {
+      window.AureliusDiagramViewport.mount({ svg: shell.querySelector("svg"), shell: shell, viewport: shell.querySelector("[data-native-viewport]"), prefix: "native", namespace: true });
     });
-  });
+
+    document.querySelectorAll("[data-canvas]").forEach(function (canvas) {
+      var shell = canvas.closest("[data-canvas-shell]");
+      function selectNode(target) {
+        var node = target.closest && target.closest(".canvas-node");
+        if (!node) return;
+        canvas.querySelectorAll(".canvas-node").forEach(function (item) { item.classList.toggle("is-active", item === node); });
+        shell.querySelector("[data-canvas-detail-title]").textContent = node.dataset.title;
+        shell.querySelector("[data-canvas-detail-summary]").textContent = node.dataset.detail || node.dataset.summary;
+      }
+      canvas.querySelectorAll(".canvas-node").forEach(function (node) {
+        node.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectNode(node); } });
+      });
+      window.AureliusDiagramViewport.mount({ svg: canvas, shell: shell, viewport: canvas.closest(".canvas-scroll"), prefix: "canvas", namespace: true, onSelect: selectNode,
+        onReset: function () { canvas.querySelectorAll(".canvas-node").forEach(function (node) { node.classList.remove("is-active"); }); }
+      });
+    });
   });
 })();

@@ -544,7 +544,7 @@ h3 {
   display: block;
   height: auto;
   max-width: 100%;
-  min-width: 860px;
+  min-width: 0;
 }
 
 .diagram-scroll {
@@ -634,10 +634,10 @@ h3 {
 .mermaid-surface {
   background: var(--dd-paper);
   cursor: grab;
-  height: var(--mermaid-height, 480px);
-  min-height: 280px;
+  height: var(--diagram-height, 160px);
+  min-height: 0;
   overflow: hidden;
-  padding: 16px;
+  padding: 0;
   touch-action: pan-y;
 }
 
@@ -653,7 +653,8 @@ h3 {
   width: 100%;
 }
 
-.mermaid-target svg {
+.mermaid-target svg,
+.diagram-figure .mermaid-target svg {
   background: var(--dd-paper);
   display: block;
   height: 100%;
@@ -685,7 +686,7 @@ h3 {
 }
 
 .mermaid-shell--standalone .mermaid-surface {
-  height: min(760px, max(280px, var(--mermaid-height, 480px)));
+  height: var(--diagram-height, 160px);
 }
 
 .mermaid-legend {
@@ -855,7 +856,7 @@ h3 {
   background: #fff;
   display: block;
   height: auto;
-  min-width: 860px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -900,11 +901,6 @@ h3 {
 .diagram-actions a:hover {
   border-color: var(--accent);
   color: var(--ink);
-}
-
-.architecture-diagram--wide {
-  min-width: var(--diagram-min-width);
-  width: var(--diagram-min-width);
 }
 
 .renderer-gallery {
@@ -1103,28 +1099,22 @@ h3 {
   min-width: 0;
   overflow: hidden;
   overscroll-behavior: contain;
-}
-
-.canvas-shell:not(.canvas-shell--standalone) .canvas-scroll {
-  max-height: min(68vh, 720px);
+  height: var(--diagram-height, 160px);
+  touch-action: pan-y;
 }
 
 .canvas-scroll svg {
   background: var(--paper-2);
   cursor: grab;
   display: block;
-  min-width: 980px;
+  min-width: 0;
   width: 100%;
+  height: 100%;
 }
 
 .canvas-scroll svg.is-panning {
   cursor: grabbing;
   user-select: none;
-}
-
-.canvas-scroll .canvas-diagram--wide {
-  min-width: var(--canvas-min-width);
-  width: var(--canvas-min-width);
 }
 
 .canvas-node {
@@ -1183,12 +1173,10 @@ h3 {
 .canvas-shell:fullscreen .canvas-scroll,
 .canvas-shell.is-expanded .canvas-scroll {
   flex: 1;
+  height: auto;
+  max-height: none;
+  touch-action: none;
   min-height: 0;
-}
-
-.canvas-shell:fullscreen .canvas-scroll svg,
-.canvas-shell.is-expanded .canvas-scroll svg {
-  min-height: 100%;
 }
 
 .canvas-standalone {
@@ -1832,8 +1820,7 @@ html {
     flex-wrap: wrap;
   }
   .mermaid-surface {
-    height: clamp(280px, 62vh, 420px);
-    padding: 10px;
+    height: var(--diagram-height, 160px);
   }
   .mermaid-legend {
     align-items: flex-start;
@@ -1900,8 +1887,11 @@ html {
   .mermaid-shell { border: 0; }
   .mermaid-toolbar { display: none; }
   .mermaid-surface { height: auto; min-height: 0; padding: 0; }
-  .mermaid-target svg { height: auto; max-height: 210mm; min-width: 0; }
-  .mermaid-summary { display: none; }
+  .mermaid-target svg, .diagram-figure .mermaid-target svg { height: auto; max-height: 210mm; min-width: 0; }
+  .mermaid-summary { display: block; }
+  .mermaid-summary > p { display: block !important; }
+  .canvas-scroll { height: auto !important; max-height: none !important; }
+  .canvas-scroll svg { height: auto; max-height: 210mm; }
   .html-artifact-stage { border: 0; display: none !important; }
   .html-artifact-static { display: block; }
   .html-artifact-print-text { border: 1px solid var(--rule); display: block; padding: 16px; }
@@ -1912,3 +1902,8 @@ html {
 @media print and (orientation: landscape) {
   .html-artifact-page { max-width: none; }
 }
+
+.mermaid-surface[data-diagram-zoomed="true"],
+.canvas-scroll[data-diagram-zoomed="true"] { touch-action: none; }
+.canvas-scroll.is-panning { cursor: grabbing; }
+.canvas-scroll:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }

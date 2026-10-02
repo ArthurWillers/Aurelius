@@ -21,10 +21,10 @@ The [Aurelius repository on GitHub](https://github.com/ArthurWillers/Aurelius) c
 
 ## Install it and create your first site
 
-Install Aurelius as a versioned GitHub development dependency. The lockfile records the resolved commit, so local work and CI use the same release:
+Install the newest semver-tagged GitHub release as a development dependency. npm resolves it when you run the command; the lockfile pins that commit for local work and CI:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.6
+npm install --save-dev github:ArthurWillers/Aurelius#semver:*
 npx --no-install aurelius init docs --title "Product documentation" --logo brand.svg
 npx --no-install aurelius check --site docs
 npx --no-install aurelius build --site docs

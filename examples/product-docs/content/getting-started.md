@@ -12,13 +12,13 @@ source_refs: ../../cli.mjs, ../../package.json, ../../core/build.mjs, ../../core
 
 ## Install the CLI as a development dependency
 
-For a project that consumes Aurelius, install a versioned GitHub dependency. It records the resolved release in `package-lock.json`, so local work and CI use the same binary:
+For a project that consumes Aurelius, install the newest semver-tagged GitHub release. npm resolves the newest release when you run this command. Commit the generated `package-lock.json` to pin the exact commit for local work and CI:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.6
+npm install --save-dev github:ArthurWillers/Aurelius#semver:*
 ```
 
-Install directly from the tagged GitHub release; cloning the generator is only necessary for contribution or local customization.
+To move an existing project to a newer release, run the install command again and commit both dependency files. Cloning the generator is only necessary for contribution or local customization.
 
 Commit the resulting `package.json` and `package-lock.json`, then use `npm ci` in CI. Private Git repositories require read access for both the developer and the CI token.
 

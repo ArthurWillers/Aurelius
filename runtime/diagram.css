@@ -101,7 +101,7 @@ h1 {
 
 svg {
   display: block;
-  min-width: 960px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -109,13 +109,8 @@ svg {
   background: #fff;
   display: block;
   height: auto;
-  min-width: 960px;
+  min-width: 0;
   width: 100%;
-}
-
-.architecture-diagram--wide {
-  min-width: var(--diagram-min-width);
-  width: var(--diagram-min-width);
 }
 
 .diagram-scroll {
@@ -194,10 +189,10 @@ svg {
 .mermaid-surface {
   background: var(--dd-paper);
   cursor: grab;
-  height: clamp(420px, 64vh, 760px);
-  min-height: 320px;
+  height: var(--diagram-height, 160px);
+  min-height: 0;
   overflow: hidden;
-  padding: 16px;
+  padding: 0;
   touch-action: pan-y;
 }
 
@@ -340,8 +335,7 @@ svg {
   }
 
   .mermaid-surface {
-    height: clamp(280px, 62vh, 420px);
-    padding: 10px;
+    height: var(--diagram-height, 160px);
   }
 
   .mermaid-legend {
@@ -380,7 +374,10 @@ svg {
   .mermaid-toolbar { display: none; }
   .mermaid-surface { height: auto; min-height: 0; padding: 0; }
   .mermaid-target svg { height: auto; max-height: 170mm; min-width: 0; }
-  .mermaid-summary { display: none; }
+  .mermaid-summary { display: block; }
+  .mermaid-summary > p { display: block !important; }
+  .canvas-scroll { height: auto !important; max-height: none !important; }
+  .canvas-scroll svg { height: auto; max-height: 210mm; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -391,3 +388,8 @@ svg {
     transition-duration: 0.01ms !important;
   }
 }
+
+.mermaid-surface[data-diagram-zoomed="true"],
+.canvas-scroll[data-diagram-zoomed="true"] { touch-action: none; }
+.canvas-scroll.is-panning { cursor: grabbing; }
+.canvas-scroll:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }

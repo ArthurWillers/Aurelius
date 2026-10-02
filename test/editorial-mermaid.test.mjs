@@ -8,7 +8,9 @@ const runtimePath = fileURLToPath(new URL("../runtime/editorial-mermaid.js", imp
 
 test("ER manual layout controls entity placement, field ports, routes, and labels", async () => {
   const context = { window: {} };
-  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
   const source = [
     "erDiagram",
     "  USERS ||--o{ AFFILIATIONS : user_id",
@@ -38,13 +40,15 @@ test("ER manual layout controls entity placement, field ports, routes, and label
   assert.match(svg, /L720 476/);
   assert.match(svg, /<rect x="80" y="80" width="320"/);
   assert.match(svg, /<rect x="720" y="400" width="320"/);
-  assert.match(svg, />TABLE<\/text>/, "database schemas identify boxes as tables");
-  assert.ok((svg.match(/height="16"/g) || []).length >= 3, "relationship labels use opaque masks");
+  assert.match(svg, />TABLE<\/tspan>/, "database schemas identify boxes as tables");
+  assert.ok((svg.match(/rx="2" fill="#f5f5f5"/g) || []).length >= 3, "relationship labels use opaque masks");
 });
 
 test("database schemas keep FK connections quiet by default while anchoring them to rows", async () => {
   const context = { window: {} };
-  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
   const source = [
     "erDiagram",
     "  USERS ||--o{ AFFILIATIONS : user_id",
@@ -65,9 +69,11 @@ test("database schemas keep FK connections quiet by default while anchoring them
   assert.equal((svg.match(/height="16"/g) || []).length, 0, "FK connectors do not repeat labels or cardinalities by default");
 });
 
-test("long state lifecycles wrap into readable rows", async () => {
+test("automatic state layout delegates the complete grammar to Mermaid", async () => {
   const context = { window: {} };
-  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
   const source = [
     "stateDiagram-v2",
     "  [*] --> PendingFormalization",
@@ -81,17 +87,16 @@ test("long state lifecycles wrap into readable rows", async () => {
   ].join("\n");
   const svg = context.window.AureliusEditorial.render(source, "state", "", {});
 
-  assert.match(svg, /viewBox="0 0 1200 440"/);
-  assert.doesNotMatch(svg, /Editorial document lifecycle/, "the page title, not a generic English heading, names the state diagram");
-  assert.match(svg, /<rect x="96" y="136" width="144" height="64"/, "the first state stays on the first row");
-  assert.match(svg, /<rect x="96" y="292" width="144" height="64"/, "later states wrap to a second row");
+  assert.equal(svg, null, "automatic ranks and all states are retained by the Mermaid renderer");
 });
 
 test("leaf states receive a terminal marker without redundant terminal transitions", async () => {
   const context = { window: {} };
-  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
   const source = ["stateDiagram-v2", "  [*] --> Draft", "  Draft --> Approved"].join("\n");
-  const svg = context.window.AureliusEditorial.render(source, "state", "", {});
+  const svg = context.window.AureliusEditorial.render(source, "state", "", {}, { states: { Draft: { x: 80, y: 80 }, Approved: { x: 320, y: 80 } } });
 
   assert.match(svg, /fill="rgba\(45,49,66,\.04\)"/, "a leaf state is visually terminal");
   assert.match(svg, /r="8" fill="none" stroke="#4f5d75"/, "a leaf state gets an end marker");
@@ -99,7 +104,9 @@ test("leaf states receive a terminal marker without redundant terminal transitio
 
 test("state layouts control positions and orthogonal transition routes", async () => {
   const context = { window: {} };
-  vm.runInNewContext(await readFile(runtimePath, "utf8"), context);
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
   const source = ["stateDiagram-v2", "  [*] --> Draft", "  Draft --> Published: release"].join("\n");
   const svg = context.window.AureliusEditorial.render(source, "state", "", {}, {
     canvas: { width: 960, height: 480 },
@@ -110,5 +117,19 @@ test("state layouts control positions and orthogonal transition routes", async (
   assert.match(svg, /viewBox="0 0 960 480"/);
   assert.match(svg, /<rect x="80" y="120" width="144" height="64"/);
   assert.match(svg, /<path d="M224 152 L520 152"/);
-  assert.match(svg, />release<\/text>/);
+  assert.match(svg, />release<\/tspan>/);
+});
+
+test("unsupported editorial syntax delegates the whole source without dropping elements", async () => {
+  const context = { window: {} };
+  vm.createContext(context);
+  vm.runInContext(await readFile(new URL("../runtime/diagram-geometry.js", import.meta.url), "utf8"), context);
+  vm.runInContext(await readFile(runtimePath, "utf8"), context);
+  const render = context.window.AureliusEditorial.render;
+  for (const kind of ["dependency", "journey", "bar", "line", "waterfall"]) assert.equal(render("complete source", kind, "", {}, { canvas: { width: 800, height: 400 } }), null);
+  assert.equal(render('stateDiagram-v2\n state "In progress" as Active\n [*] --> Active', "state", "", {}, { states: { Active: { x: 80, y: 80 } } }), null);
+  assert.equal(render('erDiagram\n users {\n int id PK "identifier"\n }', "er", "", {}, { entities: { users: { x: 80, y: 80 } } }), null);
+  const svg = render("erDiagram\n users ||--o{ orders : owns\n users {\n int id PK\n }", "er", "", { relationships: [{ from: "wrong", to: "missing" }] }, { entities: { users: { x: 80, y: 80 } } });
+  assert.match(svg, />orders<\/tspan>/, "entities without attribute blocks remain present");
+  assert.match(svg, />owns<\/tspan>/, "source relationships remain authoritative");
 });

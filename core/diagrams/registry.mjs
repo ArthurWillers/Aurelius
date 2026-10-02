@@ -54,6 +54,10 @@ export function validateAccessibleSvg(raw, diagram) {
   if (!/\bviewBox\s*=\s*["'][^"']+["']/i.test(opening)) {
     throw new Error("Artefato SVG precisa declarar viewBox: " + diagram.svgSource);
   }
+  const viewBox = opening.match(/\bviewBox\s*=\s*["']([^"']+)["']/i)[1].trim().split(/[\s,]+/).map(Number);
+  if (viewBox.length !== 4 || !viewBox.every(Number.isFinite) || viewBox[2] <= 0 || viewBox[3] <= 0) {
+    throw new Error("Artefato SVG precisa de viewBox finito com dimensões positivas: " + diagram.svgSource);
+  }
   const labelledBy = opening.match(/\baria-labelledby\s*=\s*["']([^"']+)["']/i)?.[1]?.trim().split(/\s+/) || [];
   if (!/\brole\s*=\s*["']img["']/i.test(opening) || labelledBy.length < 2) {
     throw new Error("Artefato SVG precisa de role=img e aria-labelledby: " + diagram.svgSource);

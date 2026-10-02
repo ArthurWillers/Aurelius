@@ -30,6 +30,8 @@ import {
   svgArtifactImage,
   validateHtmlArtifact,
 } from "./diagrams/artifacts.mjs";
+import geometry from "./diagrams/geometry.mjs";
+import { pathBounds, pathPoints } from "./diagrams/svg-path.mjs";
 import { validateMermaidSource } from "./diagrams/mermaid.mjs";
 import {
   renderRendererGallery,
@@ -402,25 +404,17 @@ function normalizeCanvasDiagram(diagram) {
       detail: node.detail || content.detail,
     };
   });
-  const allBoxes = [...groups, ...nodes];
-  const minX = Math.min(0, ...allBoxes.map((item) => item.x));
-  const minY = Math.min(0, ...allBoxes.map((item) => item.y));
-  const offsetX = minX < 32 ? 32 - minX : 0;
-  const offsetY = minY < 32 ? 32 - minY : 0;
-  const move = (item) => ({ ...item, x: item.x + offsetX, y: item.y + offsetY });
-  diagram.groups = groups.map(move);
-  diagram.nodes = nodes.map(move);
+  diagram.groups = groups;
+  diagram.nodes = nodes;
   diagram.edges = (diagram.edges || []).map((edge, index) => ({
     ...edge,
     id: edge.id || "edge-" + (index + 1),
     from: edge.from || edge.fromNode,
     to: edge.to || edge.toNode,
-    fromSide: edge.fromSide || "right",
-    toSide: edge.toSide || "left",
   }));
-  const shiftedBoxes = [...diagram.groups, ...diagram.nodes];
-  diagram.canvasWidth = Math.ceil(Math.max(1400, ...shiftedBoxes.map((item) => item.x + item.width + 32)));
-  diagram.canvasHeight = Math.ceil(Math.max(576, ...shiftedBoxes.map((item) => item.y + item.height + 32)));
+  const bounds = geometry.pad(geometry.union([...groups, ...nodes]), geometry.padding);
+  diagram.canvasWidth = Math.ceil(bounds.width);
+  diagram.canvasHeight = Math.ceil(bounds.height);
   return diagram;
 }
 
@@ -609,167 +603,104 @@ function themeAwareDiagramColors(colors) {
   };
 }
 
-function wrapSvgText(value, maxCharacters) {
-  const words = String(value || "").trim().split(/\s+/).filter(Boolean);
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const candidate = line ? line + " " + word : word;
-    if (candidate.length <= maxCharacters || !line) {
-      line = candidate;
-    } else {
-      lines.push(line);
-      line = word;
-    }
+function fittedNodeText(value, width, height, size, mono = false) {
+  let lines = geometry.wrapText(value, Math.max(1, width), size, mono);
+  for (let iteration = 0; iteration < 4 && lines.length * size * 1.25 > height; iteration += 1) {
+    size *= Math.max(0.2, height / (lines.length * size * 1.25));
+    lines = geometry.wrapText(value, Math.max(1, width), size, mono);
   }
-  if (line) lines.push(line);
-  return lines.slice(0, 2).map((item, index, all) =>
-    index === 1 && all.length === 2 && item.length > maxCharacters
-      ? item.slice(0, Math.max(1, maxCharacters - 1)) + "…"
-      : item,
-  );
+  return { lines, size, lineHeight: size * 1.25 };
 }
 
 function architectureNodeSvg(node, colors) {
   const appearance = nodeAppearance(node.kind, colors);
   const centerX = node.x + node.width / 2;
   const tag = String(node.tag || node.kind || "COMPONENTE").toUpperCase();
-  const tagWidth = roundToFour(Math.max(40, tag.length * 5 + 16));
+  const tagWidth = Math.max(1, Math.min(node.width - 24, roundToFour(Math.max(40, geometry.textWidth(tag, 8, true) + 16))));
+  const tagSize = Math.min(8, 8 * Math.max(1, tagWidth - 12) / Math.max(1, geometry.textWidth(tag, 8, true)));
   const tagX = node.x + 12;
-  const labelLines = wrapSvgText(node.label, Math.max(12, Math.floor((node.width - 28) / 7)));
   const hasDetail = Boolean(node.detail);
-  const nameStart = node.y + node.height - (hasDetail ? 38 : 30) - (labelLines.length - 1) * 14;
+  const label = fittedNodeText(node.label, node.width - 28, Math.max(12, node.height - (hasDetail ? 62 : 42)), 12);
+  const nameStart = node.y + 34 + label.size;
+  const detail = fittedNodeText(node.detail || "", node.width - 28, 18, 8, true);
   const dash = appearance.dash ? ' stroke-dasharray="' + appearance.dash + '"' : "";
   return [
     '<g class="architecture-node" data-node="' + escapeAttribute(node.id) + '">',
+    "<title>" + escapeHtml(node.label || node.title) + "</title>",
     '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.width + '" height="' + node.height + '" rx="8" fill="' + colors.paper + '"/>',
     '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.width + '" height="' + node.height + '" rx="8" fill="' + appearance.fill + '" stroke="' + appearance.stroke + '" stroke-width="1"' + dash + "/>",
     '<rect x="' + tagX + '" y="' + (node.y + 12) + '" width="' + tagWidth + '" height="12" rx="4" fill="transparent" stroke="' + appearance.stroke + '" stroke-width="0.8"/>',
-    '<text x="' + (tagX + tagWidth / 2) + '" y="' + (node.y + 21) + '" fill="' + appearance.tag + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">' + escapeHtml(tag) + "</text>",
-    '<text x="' + centerX + '" y="' + nameStart + '" fill="' + colors.ink + '" font-size="12" font-weight="600" font-family="Inter, system-ui, sans-serif" text-anchor="middle">' +
-      labelLines.map((line, index) => '<tspan x="' + centerX + '" dy="' + (index ? 14 : 0) + '">' + escapeHtml(line) + "</tspan>").join("") +
+    '<text x="' + (tagX + tagWidth / 2) + '" y="' + (node.y + 21) + '" fill="' + appearance.tag + '" font-size="' + tagSize + '" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">' + escapeHtml(tag) + "</text>",
+    '<text x="' + centerX + '" y="' + nameStart + '" fill="' + colors.ink + '" font-size="' + label.size + '" font-weight="600" font-family="Inter, system-ui, sans-serif" text-anchor="middle">' +
+      label.lines.map((line, index) => '<tspan x="' + centerX + '" dy="' + (index ? label.lineHeight : 0) + '">' + escapeHtml(line) + "</tspan>").join("") +
       "</text>",
     hasDetail
-      ? '<text x="' + centerX + '" y="' + (node.y + node.height - 16) + '" fill="' + colors.muted + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">' + escapeHtml(node.detail) + "</text>"
+      ? '<text x="' + centerX + '" y="' + (node.y + node.height - 18) + '" fill="' + colors.muted + '" font-size="' + detail.size + '" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">' + detail.lines.map((line, index) => '<tspan x="' + centerX + '" dy="' + (index ? detail.lineHeight : 0) + '">' + escapeHtml(line) + "</tspan>").join("") + "</text>"
       : "",
     "</g>",
   ].join("");
 }
 
-function edgeSides(from, to) {
-  const dx = to.x + to.width / 2 - (from.x + from.width / 2);
-  const dy = to.y + to.height / 2 - (from.y + from.height / 2);
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    return { primary: "horizontal", from: dx >= 0 ? "right" : "left", to: dx >= 0 ? "left" : "right" };
-  }
-  return { primary: "vertical", from: dy >= 0 ? "bottom" : "top", to: dy >= 0 ? "top" : "bottom" };
+function nativeEdgeSvg(route, colors, diagramId, canvas = false) {
+  const edge = route.edge;
+  const tone = edge.tone === "accent" ? colors.accent : edge.tone === "link" || edge.tone === "return" ? colors.link : colors.muted;
+  const suffix = edge.tone === "accent" ? "-accent" : edge.tone === "link" || edge.tone === "return" ? "-link" : "";
+  const marker = diagramId + (canvas ? "-canvas-arrow" : "-arrow") + suffix;
+  const dashed = edge.dashed || edge.tone === "optional" || edge.tone === "return";
+  const label = route.label;
+  return '<path d="' + escapeAttribute(edge.path || route.path) + '" fill="none" stroke="' + tone + '" stroke-width="1.2"' + (dashed ? ' stroke-dasharray="4 3"' : "") + ' marker-end="url(#' + marker + ')"/>' +
+    (label ? '<rect x="' + label.x + '" y="' + label.y + '" width="' + label.width + '" height="' + label.height + '" rx="3" fill="' + colors.paper + '"/><text x="' + (label.x + label.width / 2) + '" y="' + (label.y + 12) + '" fill="' + tone + '" font-size="9" font-family="ui-monospace,monospace" text-anchor="middle">' + label.lines.map((line, index) => '<tspan x="' + (label.x + label.width / 2) + '" dy="' + (index ? 12 : 0) + '">' + escapeHtml(line) + '</tspan>').join("") + '</text>' : "");
 }
 
-function nodePort(node, side, index, count) {
-  const length = side === "left" || side === "right" ? node.height : node.width;
-  const padding = 20;
-  const available = Math.max(0, length - padding * 2);
-  const offset = roundToFour(padding + (available * (index + 1)) / (count + 1));
-  if (side === "left") return { x: node.x, y: node.y + offset };
-  if (side === "right") return { x: node.x + node.width, y: node.y + offset };
-  if (side === "top") return { x: node.x + offset, y: node.y };
-  return { x: node.x + offset, y: node.y + node.height };
+function nativeRoutes(diagram) {
+  return geometry.routeEdges(diagram.nodes, diagram.edges, (edge) => edge.path ? pathPoints(edge.path) : null);
 }
 
-function routedArchitectureEdges(diagram) {
-  const nodes = new Map(diagram.nodes.map((node) => [node.id, node]));
-  const items = diagram.edges.map((edge) => ({ ...edge, sides: edgeSides(nodes.get(edge.from), nodes.get(edge.to)) }));
-  const groups = new Map();
-  for (const item of items) {
-    for (const key of [item.from + ":" + item.sides.from, item.to + ":" + item.sides.to]) {
-      groups.set(key, [...(groups.get(key) || []), item]);
-    }
-  }
-  return items.map((item) => {
-    const sourceGroup = groups.get(item.from + ":" + item.sides.from);
-    const targetGroup = groups.get(item.to + ":" + item.sides.to);
-    return {
-      ...item,
-      start: nodePort(nodes.get(item.from), item.sides.from, sourceGroup.indexOf(item), sourceGroup.length),
-      end: nodePort(nodes.get(item.to), item.sides.to, targetGroup.indexOf(item), targetGroup.length),
-    };
-  });
+function nativeBounds(diagram, routes, groups) {
+  return geometry.union([
+    ...diagram.nodes, ...groups,
+    ...routes.flatMap((route) => [geometry.pad(route.edge.path ? pathBounds(route.edge.path) : geometry.pointsBounds(route.points), 10), route.label]),
+  ]);
 }
 
-function roundedRoute(edge) {
-  const { start, end } = edge;
-  if (edge.sides.primary === "horizontal") {
-    if (start.y === end.y) return { path: "M " + start.x + "," + start.y + " H " + end.x, label: { x: (start.x + end.x) / 2, y: start.y, side: "above" } };
-    const middle = roundToFour((start.x + end.x) / 2);
-    const verticalDirection = end.y > start.y ? 1 : -1;
-    const firstDirection = middle > start.x ? 1 : -1;
-    const secondDirection = end.x > middle ? 1 : -1;
-    const radius = Math.max(4, Math.floor(Math.min(8, Math.abs(end.y - start.y) / 2, Math.abs(middle - start.x), Math.abs(end.x - middle)) / 4) * 4);
-    return {
-      path: "M " + start.x + "," + start.y + " H " + (middle - firstDirection * radius) + " Q " + middle + "," + start.y + " " + middle + "," + (start.y + verticalDirection * radius) + " V " + (end.y - verticalDirection * radius) + " Q " + middle + "," + end.y + " " + (middle + secondDirection * radius) + "," + end.y + " H " + end.x,
-      label: { x: middle, y: (start.y + end.y) / 2, side: "right" },
-    };
-  }
-  if (start.x === end.x) return { path: "M " + start.x + "," + start.y + " V " + end.y, label: { x: start.x, y: (start.y + end.y) / 2, side: "right" } };
-  const middle = roundToFour((start.y + end.y) / 2);
-  const horizontalDirection = end.x > start.x ? 1 : -1;
-  const firstDirection = middle > start.y ? 1 : -1;
-  const secondDirection = end.y > middle ? 1 : -1;
-  const radius = Math.max(4, Math.floor(Math.min(8, Math.abs(end.x - start.x) / 2, Math.abs(middle - start.y), Math.abs(end.y - middle)) / 4) * 4);
-  return {
-    path: "M " + start.x + "," + start.y + " V " + (middle - firstDirection * radius) + " Q " + start.x + "," + middle + " " + (start.x + horizontalDirection * radius) + "," + middle + " H " + (end.x - horizontalDirection * radius) + " Q " + end.x + "," + middle + " " + end.x + "," + (middle + secondDirection * radius) + " V " + end.y,
-    label: { x: (start.x + end.x) / 2, y: middle, side: "above" },
-  };
-}
-
-function architectureEdgeSvg(edge, colors, diagramId) {
-  const tone = { accent: { stroke: colors.accent, marker: diagramId + "-arrow-accent" }, link: { stroke: colors.link, marker: diagramId + "-arrow-link" }, default: { stroke: colors.muted, marker: diagramId + "-arrow" } }[edge.tone === "accent" || edge.tone === "link" ? edge.tone : "default"];
-  const route = roundedRoute(edge);
-  const dashed = edge.tone === "optional" || edge.tone === "return" || edge.dashed;
-  const label = edge.label ? String(edge.label).toUpperCase().slice(0, 24) : "";
-  const labelWidth = roundToFour(Math.max(48, label.length * 5 + 16));
-  const labelParts = !label ? "" : route.label.side === "above"
-    ? '<rect x="' + roundToFour(route.label.x - labelWidth / 2) + '" y="' + (route.label.y - 24) + '" width="' + labelWidth + '" height="12" rx="4" fill="' + colors.paper + '"/><text x="' + route.label.x + '" y="' + (route.label.y - 15) + '" fill="' + tone.stroke + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">' + escapeHtml(label) + "</text>"
-    : '<rect x="' + (route.label.x + 8) + '" y="' + (route.label.y - 8) + '" width="' + labelWidth + '" height="12" rx="4" fill="' + colors.paper + '"/><text x="' + (route.label.x + 16) + '" y="' + (route.label.y + 1) + '" fill="' + tone.stroke + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" letter-spacing="0.06em">' + escapeHtml(label) + "</text>";
-  return '<path d="' + route.path + '" fill="none" stroke="' + tone.stroke + '" stroke-width="' + (dashed ? "1" : "1.2") + '"' + (dashed ? ' stroke-dasharray="4 3"' : "") + ' marker-end="url(#' + tone.marker + ')"/>' + labelParts;
-}
-
-function architectureLegend(diagram, colors, width, legendY, config) {
+function architectureLegend(diagram, colors, content, config) {
   const english = String(config?.language || "").toLowerCase().startsWith("en");
   const labels = english
     ? { focal: "CORE", backend: "SERVICE", store: "STORE", external: "EXTERNAL", input: "INPUT", security: "SECURITY", optional: "OPTIONAL", step: "STEP", decision: "DECISION" }
     : { focal: "NÚCLEO", backend: "SERVIÇO", store: "REGISTRO", external: "EXTERNO", input: "ENTRADA", security: "SEGURANÇA", optional: "OPCIONAL", step: "ETAPA", decision: "DECISÃO" };
-  const kinds = [...new Set(diagram.nodes.map((node) => node.kind || "backend"))].slice(0, 5);
-  let cursor = 144;
-  const items = kinds.map((kind) => {
+  const x = content.x, top = content.y + content.height + 24;
+  let cursor = x + 72, y = top + 22, right = content.x + content.width;
+  const items = [...new Set(diagram.nodes.map((node) => node.kind || "backend"))].map((kind) => {
+    const label = labels[kind] || kind.toUpperCase(), width = geometry.textWidth(label, 8, true) + 38;
+    if (cursor + width > right) { cursor = x; y += 28; }
     const appearance = nodeAppearance(kind, colors);
-    const item = '<rect x="' + cursor + '" y="' + (legendY + 12) + '" width="12" height="12" rx="4" fill="' + appearance.fill + '" stroke="' + appearance.stroke + '" stroke-width="1"' + (appearance.dash ? ' stroke-dasharray="' + appearance.dash + '"' : "") + '/><text x="' + (cursor + 24) + '" y="' + (legendY + 22) + '" fill="' + colors.muted + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace">' + labels[kind] + "</text>";
-    cursor += roundToFour((labels[kind] || kind).length * 6 + 56);
+    const item = '<rect x="' + cursor + '" y="' + (y - 10) + '" width="12" height="12" rx="4" fill="' + appearance.fill + '" stroke="' + appearance.stroke + '" stroke-width="1"' + (appearance.dash ? ' stroke-dasharray="' + appearance.dash + '"' : "") + '/><text x="' + (cursor + 24) + '" y="' + y + '" fill="' + colors.muted + '" font-size="8" font-family="ui-monospace,monospace">' + label + "</text>";
+    right = Math.max(right, cursor + width); cursor += width;
     return item;
   }).join("");
-  return '<line x1="40" y1="' + legendY + '" x2="' + (width - 40) + '" y2="' + legendY + '" stroke="' + colors.rule + '" stroke-width="0.8"/><text x="40" y="' + (legendY + 22) + '" fill="' + colors.muted + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" letter-spacing="0.14em">' + (english ? "LEGEND" : "LEGENDA") + '</text>' + items;
+  return { bounds: { x, y: top, width: right - x, height: y - top + 4 }, svg: '<line x1="' + x + '" y1="' + top + '" x2="' + right + '" y2="' + top + '" stroke="' + colors.rule + '" stroke-width="0.8"/><text x="' + x + '" y="' + (top + 22) + '" fill="' + colors.muted + '" font-size="8" font-family="ui-monospace,monospace">' + (english ? "LEGEND" : "LEGENDA") + '</text>' + items };
 }
 
 function renderArchitectureSvg(diagram, colors, config = {}) {
   const themeColors = themeAwareDiagramColors(colors);
   const marker = (id, fill) => '<marker id="' + id + '" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="' + fill + '"/></marker>';
-  const contentRight = Math.max(1280, ...diagram.nodes.map((node) => node.x + node.width + 40), ...diagram.zones.map((zone) => zone.x + zone.width + 40));
-  const contentBottom = Math.max(560, ...diagram.nodes.map((node) => node.y + node.height), ...diagram.zones.map((zone) => zone.y + zone.height));
-  const width = roundToFour(Math.max(diagram.width || 0, contentRight));
-  const height = roundToFour(Math.max(diagram.height || 0, contentBottom + 112));
+  const routes = nativeRoutes(diagram);
+  const content = nativeBounds(diagram, routes, diagram.zones);
+  const legend = architectureLegend(diagram, themeColors, content, config);
+  const bounds = geometry.pad(geometry.union([content, legend.bounds]), geometry.padding);
   const zones = diagram.zones.map((zone) => {
-    const labelWidth = roundToFour(Math.max(64, String(zone.label || "ZONA").length * 6 + 16));
-    return '<g><rect x="' + zone.x + '" y="' + zone.y + '" width="' + zone.width + '" height="' + zone.height + '" rx="8" fill="' + themeColors.paper2 + '" fill-opacity="0.55" stroke="' + themeColors.rule + '" stroke-width="0.8" stroke-dasharray="4 4"/><rect x="' + (zone.x + 12) + '" y="' + (zone.y + 8) + '" width="' + labelWidth + '" height="12" rx="4" fill="' + themeColors.paper + '"/><text x="' + (zone.x + 20) + '" y="' + (zone.y + 20) + '" fill="' + themeColors.muted + '" font-size="8" font-family="Geist Mono, ui-monospace, monospace" letter-spacing="0.12em">' + escapeHtml(zone.label || "ZONA") + "</text></g>";
+    const label = fittedNodeText(zone.label || "ZONA", zone.width - 40, 16, 8, true);
+    const labelWidth = Math.max(1, Math.min(zone.width - 24, Math.max(...label.lines.map((line) => geometry.textWidth(line, label.size, true))) + 16));
+    return '<g><rect x="' + zone.x + '" y="' + zone.y + '" width="' + zone.width + '" height="' + zone.height + '" rx="8" fill="' + themeColors.paper2 + '" fill-opacity="0.55" stroke="' + themeColors.rule + '" stroke-width="0.8" stroke-dasharray="4 4"/><rect x="' + (zone.x + 12) + '" y="' + (zone.y + 8) + '" width="' + labelWidth + '" height="' + (label.lines.length * label.lineHeight + 4) + '" rx="4" fill="' + themeColors.paper + '"/><text x="' + (zone.x + 20) + '" y="' + (zone.y + 20) + '" fill="' + themeColors.muted + '" font-size="' + label.size + '" font-family="Geist Mono, ui-monospace, monospace">' + label.lines.map((line, index) => '<tspan x="' + (zone.x + 20) + '" dy="' + (index ? label.lineHeight : 0) + '">' + escapeHtml(line) + '</tspan>').join("") + "</text></g>";
   }).join("");
-  const edges = routedArchitectureEdges(diagram).map((edge) => architectureEdgeSvg(edge, themeColors, diagram.id)).join("");
+  const edges = routes.map((route) => nativeEdgeSvg(route, themeColors, diagram.id)).join("");
   const nodes = diagram.nodes.map((node) => architectureNodeSvg(node, themeColors)).join("");
-  const legendY = height - 64;
   return [
-    '<svg class="architecture-diagram' + (width > 1440 ? " architecture-diagram--wide" : "") + '"' + (width > 1440 ? ' style="--diagram-min-width: ' + width + 'px"' : "") + ' viewBox="0 0 ' + width + " " + height + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="' + diagram.id + "-title " + diagram.id + '-desc">',
+    '<svg class="architecture-diagram" width="' + bounds.width + '" height="' + bounds.height + '" viewBox="' + geometry.viewBox(bounds).join(" ") + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="' + diagram.id + "-title " + diagram.id + '-desc">',
     '<title id="' + diagram.id + '-title">' + escapeHtml(diagram.title) + "</title>",
     '<desc id="' + diagram.id + '-desc">' + escapeHtml(diagram.description) + "</desc>",
     "<defs>", marker(diagram.id + "-arrow", themeColors.muted), marker(diagram.id + "-arrow-accent", themeColors.accent), marker(diagram.id + "-arrow-link", themeColors.link), "</defs>",
-    '<rect width="' + width + '" height="' + height + '" fill="' + themeColors.paper + '"/>', zones, edges, nodes, architectureLegend(diagram, themeColors, width, legendY, config), "</svg>",
+    '<rect data-diagram-background x="' + bounds.x + '" y="' + bounds.y + '" width="' + bounds.width + '" height="' + bounds.height + '" fill="' + themeColors.paper + '"/>', '<g data-diagram-content>', zones, edges, nodes, legend.svg, "</g></svg>",
   ].join("");
 }
 
@@ -781,21 +712,6 @@ function renderDiagramSvg(diagram, colors, config = {}) {
     : diagram._svg;
 }
 
-function svgTextLines(value, maxCharacters, maximumLines = 2) {
-  const words = String(value || "").split(/\s+/).filter(Boolean);
-  const lines = [];
-  for (const word of words) {
-    const current = lines[lines.length - 1];
-    if (!current || (current + " " + word).length > maxCharacters) lines.push(word);
-    else lines[lines.length - 1] += " " + word;
-  }
-  if (lines.length > maximumLines) {
-    lines.length = maximumLines;
-    lines[maximumLines - 1] = lines[maximumLines - 1].replace(/[.…]*$/, "") + "…";
-  }
-  return lines;
-}
-
 function canvasNodeSvg(node, colors, copy) {
   const appearance = nodeAppearance(node.kind, colors);
   const centerX = node.x + node.width / 2;
@@ -803,9 +719,11 @@ function canvasNodeSvg(node, colors, copy) {
     ? ' stroke-dasharray="' + appearance.dash + '"'
     : "";
   const tag = String(node.tag || (node.kind === "focal" ? "ACTIVE" : node.kind)).toUpperCase();
-  const titleLines = svgTextLines(node.title, Math.max(14, Math.floor(node.width / 8)), 2);
-  const title = titleLines.map((line, index) =>
-    '<tspan x="' + centerX + '" dy="' + (index ? 17 : 0) + '">' + escapeHtml(line) + "</tspan>",
+  const tagSize = Math.min(12, 12 * Math.max(1, node.width - 24) / Math.max(1, geometry.textWidth(tag, 12, true) * 1.1));
+  const detailSize = Math.min(11, 11 * Math.max(1, node.width - 24) / Math.max(1, geometry.textWidth(copy.openDetail, 11, true)));
+  const label = fittedNodeText(node.title, node.width - 28, Math.max(12, node.height - 64), 22);
+  const title = label.lines.map((line, index) =>
+    '<tspan x="' + centerX + '" dy="' + (index ? label.lineHeight : 0) + '">' + escapeHtml(line) + "</tspan>",
   ).join("");
 
   return [
@@ -858,16 +776,16 @@ function canvasNodeSvg(node, colors, copy) {
       (node.y + 20) +
       '" fill="' +
       appearance.tag +
-      '" font-size="12" font-family="Geist Mono, ui-monospace, monospace" font-weight="600" letter-spacing="0.08em">' +
+      '" font-size="' + tagSize + '" font-family="Geist Mono, ui-monospace, monospace" font-weight="600" letter-spacing="0.08em">' +
       escapeHtml(tag) +
       "</text>",
     '<text x="' +
       centerX +
       '" y="' +
-      (node.y + (titleLines.length > 1 ? 48 : 55)) +
+      (node.y + 32 + label.size) +
       '" fill="' +
       colors.ink +
-      '" font-size="22" font-family="Inter, system-ui, sans-serif" font-weight="600" text-anchor="middle">' +
+      '" font-size="' + label.size + '" font-family="Inter, system-ui, sans-serif" font-weight="600" text-anchor="middle">' +
       title +
       "</text>",
     '<text x="' +
@@ -876,62 +794,9 @@ function canvasNodeSvg(node, colors, copy) {
       (node.y + node.height - 16) +
       '" fill="' +
       colors.muted +
-      '" font-size="11" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">' + escapeHtml(copy.openDetail) + "</text>",
+      '" font-size="' + detailSize + '" font-family="Geist Mono, ui-monospace, monospace" text-anchor="middle">' + escapeHtml(copy.openDetail) + "</text>",
     "</g>",
   ].join("");
-}
-
-function canvasPort(node, side) {
-  if (side === "left") return { x: node.x, y: node.y + node.height / 2 };
-  if (side === "top") return { x: node.x + node.width / 2, y: node.y };
-  if (side === "bottom") return { x: node.x + node.width / 2, y: node.y + node.height };
-  return { x: node.x + node.width, y: node.y + node.height / 2 };
-}
-
-function canvasRoute(edge, nodeMap) {
-  if (edge.path) return edge.path;
-  const from = nodeMap.get(edge.from);
-  const to = nodeMap.get(edge.to);
-  const start = canvasPort(from, edge.fromSide);
-  const end = canvasPort(to, edge.toSide);
-  if (["left", "right"].includes(edge.fromSide)) {
-    const middleX = roundToFour((start.x + end.x) / 2);
-    return "M " + start.x + "," + start.y + " H " + middleX + " V " + end.y + " H " + end.x;
-  }
-  const middleY = roundToFour((start.y + end.y) / 2);
-  return "M " + start.x + "," + start.y + " V " + middleY + " H " + end.x + " V " + end.y;
-}
-
-function canvasEdgeSvg(edge, colors, diagramId, nodeMap) {
-  const tone = {
-    accent: {
-      stroke: colors.accent,
-      marker: diagramId + "-canvas-arrow-accent",
-      dash: "",
-    },
-    return: {
-      stroke: colors.link,
-      marker: diagramId + "-canvas-arrow-link",
-      dash: ' stroke-dasharray="4 3"',
-    },
-    default: {
-      stroke: colors.muted,
-      marker: diagramId + "-canvas-arrow",
-      dash: "",
-    },
-  }[edge.tone || "default"];
-
-  return (
-    '<path d="' +
-    canvasRoute(edge, nodeMap) +
-    '" fill="none" stroke="' +
-    tone.stroke +
-    '" stroke-width="1.2"' +
-    tone.dash +
-    ' marker-end="url(#' +
-    tone.marker +
-    ')"/>'
-  );
 }
 
 function renderCanvasSvg(diagram, colors, config) {
@@ -944,8 +809,9 @@ function renderCanvasSvg(diagram, colors, config) {
     '"/></marker>';
 
   const groups = diagram.groups
-    .map((group) =>
-      [
+    .map((group) => {
+      const label = fittedNodeText(group.label, group.width - 32, Math.max(12, Math.min(24, group.height - 24)), 14, true);
+      return [
         "<g>",
         '<rect x="' +
           group.x +
@@ -964,19 +830,21 @@ function renderCanvasSvg(diagram, colors, config) {
           (group.y + 28) +
           '" fill="' +
           colors.muted +
-          '" font-size="14" font-family="Geist Mono, ui-monospace, monospace" font-weight="600" letter-spacing="0.1em">' +
-          escapeHtml(group.label) +
+          '" font-size="' + label.size + '" font-family="Geist Mono, ui-monospace, monospace" font-weight="600">' +
+          label.lines.map((line, index) => '<tspan x="' + (group.x + 16) + '" dy="' + (index ? label.lineHeight : 0) + '">' + escapeHtml(line) + '</tspan>').join("") +
           "</text>",
         "</g>",
-      ].join(""),
-    )
+      ].join("");
+    })
     .join("");
 
-  const width = diagram.canvasWidth || 1400;
-  const height = diagram.canvasHeight || 576;
-  const nodeMap = new Map(diagram.nodes.map((node) => [node.id, node]));
+  const routes = nativeRoutes(diagram);
+  const bounds = geometry.pad(nativeBounds(diagram, routes, diagram.groups), geometry.padding);
+  const width = bounds.width, height = bounds.height;
+  diagram.canvasWidth = Math.ceil(width);
+  diagram.canvasHeight = Math.ceil(height);
   return [
-    '<svg data-canvas class="' + (width > 1600 ? "canvas-diagram--wide" : "") + '" style="--canvas-min-width:' + width + 'px" viewBox="0 0 ' + width + " " + height + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="' +
+    '<svg data-canvas width="' + width + '" height="' + height + '" viewBox="' + geometry.viewBox(bounds).join(" ") + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="' +
       diagram.id +
       "-canvas-title " +
       diagram.id +
@@ -996,13 +864,11 @@ function renderCanvasSvg(diagram, colors, config) {
     marker(diagram.id + "-canvas-arrow-accent", colors.accent),
     marker(diagram.id + "-canvas-arrow-link", colors.link),
     "</defs>",
-    '<rect width="' + width + '" height="' + height + '" fill="' + colors.paper2 + '"/>',
-    groups,
-    diagram.edges
-      .map((edge) => canvasEdgeSvg(edge, colors, diagram.id, nodeMap))
-      .join(""),
+    '<rect data-diagram-background x="' + bounds.x + '" y="' + bounds.y + '" width="' + width + '" height="' + height + '" fill="' + colors.paper2 + '"/>',
+    "<g data-diagram-content>", groups,
+    routes.map((route) => nativeEdgeSvg(route, colors, diagram.id, true)).join(""),
     diagram.nodes.map((node) => canvasNodeSvg(node, colors, copy)).join(""),
-    "</svg>",
+    "</g></svg>",
   ].join("");
 }
 
@@ -1069,7 +935,6 @@ function renderMermaidLegend(diagram, config) {
 function renderMermaidSurface(diagram, options = {}) {
   const config = options.config || { language: "pt-BR" };
   const copy = messages(config);
-  const height = Math.max(280, Math.min(900, Number(diagram.presentation?.height) || 480));
   const initialZoom = Math.max(0.5, Math.min(4, Number(diagram.presentation?.initialZoom) || 1));
   const initialPosition = diagram.presentation?.initialPosition === "start" ? "start" : "center";
   const focus = [diagram.data?.focus, diagram.data?.aggregateRoot, diagram.declarativeAnalysis?.focus].flat(2).filter(Boolean);
@@ -1086,7 +951,7 @@ function renderMermaidSurface(diagram, options = {}) {
       '" data-mermaid-focus="' + escapeAttribute(JSON.stringify(focus)) +
       '" data-mermaid-analysis="' + escapeAttribute(JSON.stringify(diagram.declarativeAnalysis || {})) +
       '" data-mermaid-layout="' + escapeAttribute(JSON.stringify(diagram.layout || {})) +
-      '" style="--mermaid-height:' + height + 'px">',
+      '">',
     '<header class="mermaid-toolbar"><p>' + escapeHtml(copy.mermaidCanvas) +
       '</p><div class="mermaid-controls" aria-label="' + escapeAttribute(copy.mermaidControls) + '">',
     '<button type="button" data-mermaid-control="out" aria-label="' + escapeAttribute(copy.zoomOut) + '">−</button>',
@@ -1121,6 +986,7 @@ function mermaidScripts(outputFile, config, mermaidJs) {
     design,
     themeVariables: {
       background: design.paper,
+      fontSize: "12px",
       primaryColor: "#ffffff",
       primaryTextColor: design.ink,
       primaryBorderColor: design.ink,
@@ -1195,7 +1061,7 @@ function mermaidScripts(outputFile, config, mermaidJs) {
       ".arrowheadPath{fill:" + design.muted + "!important;stroke:" + design.muted + "!important}",
       ".marker,.marker path{fill:none!important;stroke:" + design.muted + "!important;stroke-width:1.2px!important}",
       ".edgeLabel rect,.labelBkg,.relationshipLabelBox{fill:" + design.paper + "!important;opacity:1!important;rx:2px;ry:2px}",
-      ".edgeLabel,.edgeLabel p,.edgeLabel span,.edgeLabel text,.relationshipLabel{color:" + design.soft + "!important;fill:" + design.soft + "!important;font-family:Geist Mono,ui-monospace,monospace!important;font-size:8px!important;font-weight:400!important;letter-spacing:.06em}",
+      ".edgeLabel,.edgeLabel p,.edgeLabel span,.edgeLabel text,.relationshipLabel{color:" + design.muted + "!important;fill:" + design.muted + "!important;font-family:Geist Mono,ui-monospace,monospace!important;font-size:10px!important;font-weight:400!important}",
       ".actor{fill:#fff!important;stroke:" + design.ink + "!important;stroke-width:1px!important;rx:6px;ry:6px}",
       "text.actor{fill:" + design.ink + "!important;font-family:Geist,Inter,system-ui,sans-serif!important;font-size:12px!important;font-weight:600!important}",
       ".actor-line{stroke:" + design.ruleSolid + "!important;stroke-width:.8px!important;stroke-dasharray:4 4}",
@@ -1266,10 +1132,16 @@ function renderStandaloneMermaid(
       escapeHtml(diagram.summary || diagram.description) + "</p></details></section>",
     "</main>",
     "<script>window.__SEARCH_INDEX__ = []; window.__AURELIUS_MESSAGES__ = " + scriptSafeJson(copy) + ";</script>",
-    mermaidScripts(outputFile, config, mermaidJs),
     "<script>" + siteJs + "</script>",
+    mermaidScripts(outputFile, config, mermaidJs),
     "</body></html>",
   ].join("\n");
+}
+
+function renderNativeSurface(diagram, svg, config) {
+  const copy = messages(config);
+  return '<section class="mermaid-shell native-shell" data-native-diagram><header class="mermaid-toolbar"><p>' + escapeHtml(diagramKindLabel(diagram.kind)) + '</p><div class="mermaid-controls" aria-label="' + escapeAttribute(copy.mermaidControls) + '">' +
+    '<button type="button" data-native-control="out" aria-label="' + escapeAttribute(copy.zoomOut) + '">−</button><output data-native-zoom aria-live="polite" aria-label="' + escapeAttribute(copy.zoomLevel) + '">100%</output><button type="button" data-native-control="in" aria-label="' + escapeAttribute(copy.zoomIn) + '">+</button><button type="button" data-native-control="reset">' + escapeHtml(copy.reset) + '</button><button type="button" data-native-control="full" aria-pressed="false">' + escapeHtml(copy.fullscreen) + '</button></div></header><div class="mermaid-surface" data-native-viewport tabindex="0" aria-label="' + escapeAttribute(copy.mermaidViewport) + '"><div class="mermaid-target">' + svg + '</div></div></section>';
 }
 
 function renderStandaloneDiagram(
@@ -1285,7 +1157,7 @@ function renderStandaloneDiagram(
   const copy = messages(config);
   const svg = renderDiagramSvg(diagram, colors, config);
   const authoredSvg = Boolean(diagram._svg);
-  const visual = authoredSvg ? svgArtifactImage(svg, diagram) : svg;
+  const visual = authoredSvg ? svgArtifactImage(svg, diagram) : renderNativeSurface(diagram, svg, config);
   return [
     "<!DOCTYPE html>",
     '<html lang="' + escapeAttribute(config.language) + '">',
@@ -1341,7 +1213,7 @@ function renderArchitectureFigure(document, diagram, colors, config) {
   const copy = messages(config);
   const svg = renderDiagramSvg(diagram, colors, config);
   const authoredSvg = Boolean(diagram._svg);
-  const visual = authoredSvg ? svgArtifactImage(svg, diagram) : svg;
+  const visual = authoredSvg ? svgArtifactImage(svg, diagram) : renderNativeSurface(diagram, svg, config);
   const standaloneHref = outputHref(
     document.id,
     path.posix.join("diagrams", diagram.id + ".html"),
@@ -2327,10 +2199,10 @@ function renderHtmlDocument(document, documents, config, context) {
     '<script id="document-markdown" type="application/json">' +
       scriptSafeJson(markdownForCopy(document, context)) +
       "</script>",
+    siteJsPlaceholder,
     hasMermaid
       ? mermaidScripts(documentOutputPath(document), config, context.mermaidJs)
       : "",
-    siteJsPlaceholder,
     "</body>",
     "</html>",
   ].join("\n");
@@ -2508,7 +2380,7 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
   outputDirectory = path.resolve(siteRoot, config.outputDirectory || "dist");
   await assertSafeOutputDirectory(runtimeDirectory);
 
-  const [documents, diagrams, siteCss, siteJs, diagramCss, mermaidJs, editorialMermaidJs] = await Promise.all([
+  const [documents, diagrams, siteCss, rawSiteJs, diagramCss, mermaidJs, editorialMermaidJs, geometryJs, viewportJs] = await Promise.all([
     readDocuments(),
     readDiagrams(),
     readFile(path.join(runtimeDirectory, "site.css"), "utf8"),
@@ -2516,7 +2388,11 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
     readFile(path.join(runtimeDirectory, "diagram.css"), "utf8"),
     readFile(path.join(frameworkRoot, "runtime", "mermaid.js"), "utf8"),
     readFile(path.join(frameworkRoot, "runtime", "editorial-mermaid.js"), "utf8"),
+    readFile(path.join(frameworkRoot, "runtime", "diagram-geometry.js"), "utf8"),
+    readFile(path.join(frameworkRoot, "runtime", "diagram-viewport.js"), "utf8"),
   ]);
+
+  const siteJs = geometryJs + "\n" + viewportJs + "\n" + rawSiteJs;
 
   if (!config.brand || !config.brand.logoSource) {
     throw new Error(

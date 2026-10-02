@@ -6,10 +6,10 @@ Aurelius is a local static documentation generator for people and agents. It tur
 
 ## Install
 
-Install Aurelius from a tagged GitHub release in the project that owns the documentation. This records the resolved revision in `package-lock.json`, so local work and CI use the same version:
+Install the newest semver-tagged GitHub release in the project that owns the documentation. npm resolves the newest release when you run this command; commit the resulting `package-lock.json` to pin the exact commit for local work and CI:
 
 ```bash
-npm install --save-dev github:ArthurWillers/Aurelius#v0.4.19
+npm install --save-dev github:ArthurWillers/Aurelius#semver:*
 ```
 
 Clone the repository only to contribute to Aurelius or maintain a fork:
@@ -128,14 +128,14 @@ This repository includes workflows for CI, Pages, and tagged releases. To publis
 
 Do not commit `dist/`: the workflow rebuilds it and uploads only the generated artifact. You may remove a documentation directory and adjust or remove its deployment workflow if you no longer want to publish that site.
 
-Create and push a release tag:
+Create and push a release tag. The release workflow runs `npm ci`, verifies the package contents, and creates the GitHub Release:
 
 ```bash
-git tag v0.4.19
+git tag v0.5.0
 ```
 
 ```bash
-git push origin v0.4.19
+git push origin v0.5.0
 ```
 
 ## Project skills
@@ -145,6 +145,50 @@ git push origin v0.4.19
 
 Both skill directories are part of the npm tarball; they are not repository-only
 development files.
+
+## Diagram rendering
+
+Mermaid parses and automatically lays out declarative diagrams. Aurelius applies
+its editorial theme and preserves the complete source grammar. Explicit state
+and ER layouts use the editorial renderer when the source fits its supported
+port and field contracts; other syntax falls back to Mermaid.
+
+Native architecture and Canvas diagrams retain their authored coordinates.
+Their SVG bounds include nodes, groups, routes, arrowheads and wrapped labels,
+with content padding. Browser rendering measures the final SVG after fonts load.
+Inline viewports adapt to the content aspect ratio. **100%** and **Reset** mean
+fit all content; fullscreen refits and restores the previous view on exit.
+Use Ctrl/⌘ + wheel or the zoom buttons to magnify, drag to pan, and keyboard
+`+`, `-`, arrow keys and `Home` to navigate. SVG export always includes all
+content and essential styles, independently of the current zoom.
+
+Quantitative visual kinds describe the document's semantics. Automatic rendering
+is available where Mermaid has an equivalent grammar (for example XY charts,
+radar, treemap and Sankey). Other charts use authored SVG or HTML; declaring a
+kind alone does not create a quantitative renderer. Authored artifacts retain
+their declared composition and presentation dimensions.
+
+## Contributing and regression checks
+
+```bash
+npm run check
+npm test
+npm run validate
+npm run build
+```
+
+Optional visual checks use an installed Chromium browser and Node's built-in
+CDP client, with no additional dependencies or browser downloads:
+
+```bash
+CHROME_BIN=/path/to/chromium npm run test:visual
+```
+
+The checks build temporary fixtures and the example site, exercise desktop and
+mobile layout, bounds, zoom, resize, fullscreen, export and print, and save
+screenshots, SVGs and a PDF. Set `AURELIUS_VISUAL_OUTPUT` to choose the artifact
+directory; otherwise they go into the temporary fixture directory. External
+fonts are blocked for reproducible offline screenshots.
 
 ## License
 

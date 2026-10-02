@@ -1,3 +1,4 @@
+import { pathBounds } from "./diagrams/svg-path.mjs";
 import { access } from "node:fs/promises";
 import path from "node:path";
 import { documentUsesDiagram, markdownWithoutFencedCode, safeAssetPath } from "./content.mjs";
@@ -207,11 +208,13 @@ export async function validate(documents, diagrams, config, siteRoot) {
       if (diagram.kind === "architecture" && (!edge.id || edgeIds.has(edge.id))) throw new Error("Aresta sem ID ou duplicada em " + diagram.id);
       if (diagram.kind === "architecture") edgeIds.add(edge.id);
       if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) throw new Error("Aresta sem origem ou destino em " + diagram.id + ": " + edge.id);
-      if (edge.from === edge.to) throw new Error("Aresta não pode ligar um nó a ele mesmo: " + edge.id);
-      if (edge.label && String(edge.label).length > 24) throw new Error("Rótulo de aresta longo demais em " + edge.id + " (máximo 24 caracteres).");
+      if (edge.path !== undefined) {
+        try { pathBounds(edge.path); } catch (error) { throw new Error("Path inválido em " + edge.id + ": " + error.message); }
+      }
+      for (const side of ["fromSide", "toSide"]) if (edge[side] !== undefined && !["left", "right", "top", "bottom"].includes(edge[side])) throw new Error("Lado inválido em " + edge.id + ": " + side);
     }
     for (const node of nodes) for (const property of ["x", "y", "width", "height"]) {
-      if (!Number.isFinite(node[property])) throw new Error("Geometria inválida no nó " + node.id + ": " + property);
+      if (!Number.isFinite(node[property]) || (["width", "height"].includes(property) && node[property] <= 0)) throw new Error("Geometria inválida no nó " + node.id + ": " + property);
       if (diagram.kind === "architecture" && node[property] % 4 !== 0) throw new Error("Geometria fora da grade de 4px no nó " + node.id + ": " + property);
     }
     for (let index = 0; diagram.kind === "architecture" && index < nodes.length; index += 1) for (let otherIndex = index + 1; otherIndex < nodes.length; otherIndex += 1) {
@@ -219,8 +222,11 @@ export async function validate(documents, diagrams, config, siteRoot) {
       const overlaps = left.x < right.x + right.width && left.x + left.width > right.x && left.y < right.y + right.height && left.y + left.height > right.y;
       if (overlaps) throw new Error("Nós sobrepostos em " + diagram.id + ": " + left.id + " e " + right.id);
     }
+    for (const group of diagram.groups) {
+      for (const property of ["x", "y", "width", "height"]) if (!Number.isFinite(group[property]) || (["width", "height"].includes(property) && group[property] <= 0)) throw new Error("Geometria inválida no grupo de " + diagram.id + ": " + property);
+    }
     for (const zone of diagram.kind === "architecture" ? diagram.zones || [] : []) {
-      for (const property of ["x", "y", "width", "height"]) if (!Number.isFinite(zone[property]) || zone[property] % 4 !== 0) throw new Error("Zona fora da grade de 4px em " + diagram.id + ": " + property);
+      for (const property of ["x", "y", "width", "height"]) if (!Number.isFinite(zone[property]) || zone[property] % 4 !== 0 || (["width", "height"].includes(property) && zone[property] <= 0)) throw new Error("Zona fora da grade de 4px em " + diagram.id + ": " + property);
       if (!zone.label) throw new Error("Zona sem rótulo em " + diagram.id);
     }
   }

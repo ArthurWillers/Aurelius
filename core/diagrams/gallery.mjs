@@ -149,9 +149,9 @@ function rendererPreview(kind) {
     '<svg viewBox="0 0 320 180" role="img" aria-labelledby="' + titleId + " " + descriptionId + '">',
     '<title id="' + titleId + '">' + esc(diagramKindLabel(kind)) + " example</title>",
     '<desc id="' + descriptionId + '">A compact example of the ' + esc(kind) + " visual grammar.</desc>",
-    '<defs><marker id="arrow" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" class="gallery-arrow"/></marker></defs>',
+    '<defs><marker id="gallery-' + kind + '-arrow" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" class="gallery-arrow"/></marker></defs>',
     '<rect width="320" height="180" class="gallery-paper"/>',
-    exampleVisual(kind),
+    exampleVisual(kind).replaceAll("url(#arrow)", "url(#gallery-" + kind + "-arrow)"),
     "</svg>",
   ].join("");
 }
