@@ -1,6 +1,6 @@
 {
   "name": "@avw/aurelius",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Static documentation framework for people and agents.",
   "private": true,
   "license": "MIT",

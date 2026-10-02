@@ -60,11 +60,13 @@ a:hover {
   display: inline-flex;
   gap: 8px;
   text-decoration: none;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .brand-logo {
   display: block;
+  flex-shrink: 0;
   height: 32px;
   object-fit: contain;
   width: 32px;

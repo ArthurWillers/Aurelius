@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const site = await mkdtemp(path.join(os.tmpdir(), "aurelius-visual-"));
 await Promise.all([mkdir(path.join(site, "content")), mkdir(path.join(site, "diagrams")), mkdir(path.join(site, "assets"))]);
 await writeFile(path.join(site, "assets", "logo.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>');
-await writeFile(path.join(site, "site.config.json"), JSON.stringify({ siteTitle: "Diagram regressions", siteDescription: "Visual regression fixtures.", brand: { logoSource: "assets/logo.svg" }, navigation: { primary: ["home"], sections: [] } }));
+await writeFile(path.join(site, "site.config.json"), JSON.stringify({ siteTitle: "Diagram regressions", siteDescription: "Visual regression fixtures.", brand: { title: "Docs", kicker: "Produto · Funcionalidades · Desenvolvimento", logoSource: "assets/logo.svg" }, navigation: { primary: ["home"], sections: [] } }));
 const cases = [...mermaidCases, ...nativeCases];
 await writeFile(path.join(site, "content", "home.md"), ["---", "id: home", "title: Diagram regressions", "description: Diagram regression cases.", "type: reference", "status: observed", "visibility: public", "tags: diagrams", "related:", "source_refs:", "---", "", ...cases.flatMap((item) => [`## ${item.id}`, `{{${item.kind === "canvas" ? "canvas" : "diagram"}:${item.id}}}`, ""]), "## Repeated native diagram", "{{diagram:native-compact}}", "{{canvas:canvas-compact}}"].join("\n"));
 for (const item of cases) await writeFile(path.join(site, "diagrams", item.id + ".json"), JSON.stringify({ ...item, title: item.id, description: "Layout and navigation regression for " + item.id, summary: "All nodes, routes, labels and semantics of this example must survive rendering and export.", ...(item.code ? { nodes: [], edges: [], source: { language: "mermaid", code: item.code } } : {}) }));
@@ -79,6 +79,11 @@ try {
   const uniqueIds = await client.evaluate('(()=>{ const ids=[...document.querySelectorAll("svg [id]")].map(e=>e.id); return ids.length === new Set(ids).size; })()');
   assert.ok(uniqueIds, "multiple inline diagrams have unique IDs");
   assert.ok(!(await client.evaluate('document.documentElement.scrollWidth > innerWidth')), "inline page overflows");
+  await client.command("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
+  await client.evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  assert.ok(!(await client.evaluate('document.documentElement.scrollWidth > innerWidth')), "long brand subtitles wrap on small screens");
+  assert.equal(await client.evaluate('document.querySelector(".brand-logo").getBoundingClientRect().width'), 32, "wrapping preserves the logo size");
+  await client.command("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   for (const item of ["return-flow", "native-compact", "canvas-compact", "large-flow", "tall-flow"]) {
     await open(path.join(site, "dist", "diagrams", item + ".html"));
     const prefix = item.startsWith("canvas") ? "canvas" : item.startsWith("native") ? "native" : "mermaid";

@@ -131,11 +131,11 @@ Do not commit `dist/`: the workflow rebuilds it and uploads only the generated a
 Create and push a release tag. The release workflow runs `npm ci`, verifies the package contents, and creates the GitHub Release:
 
 ```bash
-git tag v0.5.0
+git tag v0.5.1
 ```
 
 ```bash
-git push origin v0.5.0
+git push origin v0.5.1
 ```
 
 ## Project skills
