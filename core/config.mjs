@@ -84,7 +84,83 @@ export function validateRawConfig(config) {
     if (!isRecord(config.repository)) throw new Error("Configuração inválida: `repository` precisa ser `null` ou um objeto.");
     assertString(config.repository.url, "repository.url");
   }
+  if (config.versioning !== undefined) {
+    validateVersioningConfig(config.versioning);
+  }
   return config;
+}
+
+export function validateVersioningConfig(versioning) {
+  if (!isRecord(versioning)) throw new Error("Configuração inválida: `versioning` precisa ser um objeto.");
+  assertString(versioning.current, "versioning.current");
+  if (!Array.isArray(versioning.versions) || versioning.versions.length < 2) {
+    throw new Error("Configuração inválida: `versioning.versions` precisa listar pelo menos duas versões completas.");
+  }
+
+  const ids = new Set();
+  const labels = new Set();
+  const sourcePaths = new Set();
+  const outputPaths = new Set();
+  let currentVersion;
+  for (const [index, version] of versioning.versions.entries()) {
+    const field = "versioning.versions[" + index + "]";
+    if (!isRecord(version)) throw new Error("Configuração inválida: `" + field + "` precisa ser um objeto.");
+    assertString(version.id, field + ".id");
+    assertString(version.label, field + ".label");
+    assertString(version.site, field + ".site");
+    assertString(version.path, field + ".path", { allowEmpty: true });
+    if (!/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(version.id)) {
+      throw new Error("Configuração inválida: `" + field + ".id` aceita letras minúsculas, números, pontos e hífens.");
+    }
+    if (ids.has(version.id)) throw new Error("Configuração inválida: versão duplicada `" + version.id + "`.");
+    ids.add(version.id);
+    if (labels.has(version.label)) throw new Error("Configuração inválida: rótulo de versão duplicado `" + version.label + "`.");
+    labels.add(version.label);
+    const sourcePath = validateVersionPath(version.site, field + ".site", { allowEmpty: false });
+    if (sourcePaths.has(sourcePath)) throw new Error("Configuração inválida: site de versão duplicado `" + sourcePath + "`.");
+    sourcePaths.add(sourcePath);
+    const outputPath = validateVersionPath(version.path, field + ".path", { allowEmpty: true });
+    if (outputPaths.has(outputPath)) throw new Error("Configuração inválida: caminho de publicação duplicado `" + (outputPath || ".") + "`.");
+    outputPaths.add(outputPath);
+    if (version.id === versioning.current) currentVersion = { ...version, path: outputPath };
+  }
+
+  if (!currentVersion) throw new Error("Configuração inválida: `versioning.current` não corresponde a uma versão listada.");
+  if (currentVersion.path !== "") throw new Error("A versão atual precisa ser publicada na raiz, com `path` vazio.");
+  const orderedSourcePaths = [...sourcePaths].sort();
+  for (let index = 0; index < orderedSourcePaths.length - 1; index += 1) {
+    if (orderedSourcePaths[index + 1].startsWith(orderedSourcePaths[index] + "/")) {
+      throw new Error("Sites-fonte de versões não podem se sobrepor.");
+    }
+  }
+  for (const version of versioning.versions) {
+    const outputPath = validateVersionPath(version.path, "versioning.versions.path", { allowEmpty: true });
+    if (version.id !== versioning.current && !outputPath.startsWith("versions/")) {
+      throw new Error("Versões secundárias precisam usar um caminho dentro de `versions/`.");
+    }
+  }
+  const orderedOutputPaths = [...outputPaths].filter(Boolean).sort();
+  for (let index = 0; index < orderedOutputPaths.length - 1; index += 1) {
+    if (orderedOutputPaths[index + 1].startsWith(orderedOutputPaths[index] + "/")) {
+      throw new Error("Caminhos de publicação de versões não podem se sobrepor.");
+    }
+  }
+  return versioning;
+}
+
+function validateVersionPath(value, field, { allowEmpty }) {
+  if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
+    throw new Error("Configuração inválida: `" + field + "` precisa ser um caminho relativo.");
+  }
+  if (value === "" && allowEmpty) return "";
+  if (value.startsWith("/") || value.includes("\\") || value.includes("?") || value.includes("#")) {
+    throw new Error("Configuração inválida: `" + field + "` precisa ser um caminho URL relativo e sem consulta.");
+  }
+  const segments = value.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new Error("Configuração inválida: `" + field + "` não aceita segmentos vazios, `.` ou `..`.");
+  }
+  return segments.join("/");
 }
 
 export function normalizeNavigation(navigation, language = "en") {
@@ -110,13 +186,13 @@ export function normalizedConfig(config) {
   const normalized = {
     language: "en", siteTitle: "Documentation",
     siteDescription: "Static documentation for people and agents.",
-    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.4.6" },
+    outputDirectory: "dist", framework: { name: "Aurelius", version: "0.6.0" },
     navigation: { primary: ["home"], sections: [] }, repository: null, ...config,
     brand: {
       title: "Documentation", kicker: "knowledge base", name: config.siteTitle || "Documentation",
       logoAlt: "Documentation logo", ...(config.brand || {}),
     },
-    framework: { name: "Aurelius", version: "0.4.6", ...(config.framework || {}) },
+    framework: { name: "Aurelius", version: "0.6.0", ...(config.framework || {}) },
     colors: { ...starterColors, ...(config.colors || {}) },
   };
   normalized.navigation = normalizeNavigation(config.navigation || normalized.navigation, normalized.language);

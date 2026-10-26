@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { writeSync } from "node:fs";
-import { buildDocumentation, initializeDocumentation } from "./core/build.mjs";
+import { initializeDocumentation } from "./core/build.mjs";
+import { buildDocumentation, resolveCurrentVersionSite } from "./core/versioning.mjs";
 import { developDocumentation } from "./core/dev.mjs";
 import { initializeVisual, listVisualTypes } from "./core/scaffold.mjs";
 
@@ -33,11 +34,12 @@ const command = process.argv[2];
 const legacyBuild = command === "--site" || command === "--check";
 const visualCommand = process.argv[3];
 
-function runVisualCommand() {
+async function runVisualCommand() {
   if (visualCommand === "init") {
+    const site = await resolveCurrentVersionSite(optionValue("--site"));
     return initializeVisual({
       id: process.argv[4],
-      site: optionValue("--site"),
+      site,
       kind: optionValue("--kind"),
       format: optionValue("--format"),
     });
@@ -59,15 +61,15 @@ const action =
     : command === "visual"
       ? runVisualCommand()
       : command === "check"
-        ? buildDocumentation({ checkOnly: true })
+        ? buildDocumentation({ site: optionValue("--site"), checkOnly: true })
         : command === "build"
-          ? buildDocumentation()
+          ? buildDocumentation({ site: optionValue("--site") })
           : command === "dev"
             ? developDocumentation()
             : command === "help" || command === "--help" || !command
               ? Promise.resolve(usage())
               : legacyBuild
-                ? buildDocumentation({ checkOnly: process.argv.includes("--check") })
+                ? buildDocumentation({ site: optionValue("--site"), checkOnly: process.argv.includes("--check") })
                 : Promise.reject(new Error("Unknown command: " + command + "\n\nUse `aurelius help` to list commands."));
 
 action.catch((error) => {

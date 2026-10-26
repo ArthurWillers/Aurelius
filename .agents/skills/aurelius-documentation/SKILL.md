@@ -11,6 +11,8 @@ Use this repository-local skill from any agent harness that discovers project sk
 
 Find `site.config.json` first. Its directory is the site root. Inspect the relevant `content/*.md`, `diagrams/*.json`, and technical sources before documenting behavior. Create a site only when the user requests one.
 
+If the root `site.config.json` declares `versioning`, treat it as a catalog rather than a content site. Each `versioning.versions[].site` is a complete independent Aurelius site with its own configuration, content, diagrams, and assets. The `current` entry must publish at the root (`path: ""`); secondary entries publish under `versions/`. Make product changes in the correct version's sources and do not merge their content folders. Run `check`, `build`, and `dev` against the catalog root so every version is validated and the combined publication is previewed. `visual init --site <catalog-root>` targets the current version.
+
 Read [the content contract](references/content-contract.md) before adding a document or changing a relation. When creating or revising a visual, also read [the visual authoring contract](references/html-visuals.md).
 
 ## Use the CLI
@@ -32,7 +34,7 @@ When working in the Aurelius source repository, use `npm run aurelius -- <comman
 - Keep each note narrowly scoped and give it a stable `id`.
 - Use `source_refs` for files that substantiate implementation facts; do not manufacture references merely to fill the field.
 - Model relationships with `related` so agents can traverse the domain without inferring links from page layout.
-- Use standard Markdown with a `doc:` destination for internal body links and `asset:` only for files under `assets/` that must be published.
+- Use standard Markdown with a `doc:` destination for internal body links and `asset:` only for files under `assets/` that must be published. Links between published version sites use ordinary relative URLs based on their output paths.
 - Keep public, internal, observed, proposed, and draft claims explicit in frontmatter.
 - Treat `visibility` as descriptive metadata, never as access control: all content is emitted. Protect an internal deployment at the host or use separate site inputs, and never place secrets in an Aurelius site.
 - Never edit `dist/`; it is a disposable projection.
@@ -49,4 +51,4 @@ For an Obsidian migration, translate the Canvas into the native JSON envelope: p
 
 ## Validate and build
 
-Run `aurelius check --site <path>` after source edits. Run `aurelius build --site <path>` only when a generated projection is requested; it recreates the configured dedicated output directory and rejects overlap with site sources. For agent-facing changes, confirm that `llms.txt`, `llms-full.txt`, `api/manifest.json`, `markdown/{id}.md`, and the affected JSON document were produced. For a visual change, inspect its inline and full views in a browser at desktop and narrow widths, test keyboard access and copy actions, and inspect print preview; a successful build alone is not visual verification.
+Run `aurelius check --site <path>` after source edits. Run `aurelius build --site <path>` only when a generated projection is requested; it recreates the configured dedicated output directory and rejects overlap with site sources. For agent-facing changes, confirm that `llms.txt`, `llms-full.txt`, `api/manifest.json`, `markdown/{id}.md`, and the affected JSON document were produced. For a versioned catalog, also confirm the current version at the output root, each secondary version under `versions/<id>/`, the header selector on both, and `api/versions.json` from each site's API manifest. For a visual change, inspect its inline and full views in a browser at desktop and narrow widths, test keyboard access and copy actions, and inspect print preview; a successful build alone is not visual verification.

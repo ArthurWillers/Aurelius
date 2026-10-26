@@ -1391,6 +1391,74 @@ html {
   gap: 8px;
 }
 
+.version-switcher {
+  position: relative;
+}
+
+.version-switcher > summary {
+  align-items: center;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  list-style: none;
+}
+
+.version-switcher > summary::-webkit-details-marker {
+  display: none;
+}
+
+.version-switcher > summary::after {
+  color: var(--accent);
+  content: "⌄";
+}
+
+.version-switcher > summary span {
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.version-switcher > summary strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.version-options {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: 0 12px 28px rgba(43, 43, 43, 0.14);
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  padding: 5px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+}
+
+.version-options a {
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.version-options a:hover,
+.version-options a[aria-current="page"] {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
 .repo-link {
   align-items: center;
   border: 1px solid var(--rule);

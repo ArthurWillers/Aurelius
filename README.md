@@ -122,6 +122,28 @@ Each Markdown document has frontmatter with a stable `id`. Use `doc:` links for 
 
 `visibility` is metadata, not access control: every document under `content/` is emitted into all projections. Protect internal deployments at the host or use separate site inputs, and never put secrets in a site. Local `source_refs` are checked as provenance but are not copied into the generated output.
 
+## Publish complete documentation versions
+
+A site can publish several complete documentation sites as one versioned site. Keep a `site.config.json`, content, diagrams, and assets for each version; the root configuration becomes the catalog and selects which version is published at `/`.
+
+```json
+{
+  "siteTitle": "Product",
+  "outputDirectory": "dist",
+  "versioning": {
+    "current": "2.0",
+    "versions": [
+      { "id": "2.0", "label": "2.0 · Current", "site": "versions/2.0", "path": "" },
+      { "id": "1.x", "label": "1.x · Previous", "site": "versions/1.x", "path": "versions/1.x" }
+    ]
+  }
+}
+```
+
+Each path in `site` points to a complete Aurelius site with its own `site.config.json`. The current version must use an empty `path`; secondary versions publish below `versions/`. `aurelius check --site docs` validates every source site. `aurelius build --site docs` builds each version and combines them into the root `dist/`; `aurelius dev --site docs` previews the same assembled output and rebuilds when a version's sources change. The header includes a version selector, and every version exposes `api/versions.json` from its `api/manifest.json` entrypoints.
+
+`aurelius visual init <id> --site docs ...` writes the visual source into the current version's site. The root catalog does not contain Markdown documents of its own.
+
 ## GitHub Pages
 
 This repository includes workflows for CI, Pages, and tagged releases. To publish the example site, open **Settings → Pages** in GitHub and select **GitHub Actions** as the source. A push to `master` then publishes `examples/product-docs`.
@@ -131,11 +153,11 @@ Do not commit `dist/`: the workflow rebuilds it and uploads only the generated a
 Create and push a release tag. The release workflow runs `npm ci`, verifies the package contents, and creates the GitHub Release:
 
 ```bash
-git tag v0.5.1
+git tag v0.6.0
 ```
 
 ```bash
-git push origin v0.5.1
+git push origin v0.6.0
 ```
 
 ## Project skills

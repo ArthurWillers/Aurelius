@@ -68,11 +68,11 @@ const optionValue = (name) => {
   return position >= 0 ? process.argv[position + 1] : null;
 };
 const requestedSite = optionValue("--site");
-const siteRoot = requestedSite
+let siteRoot = requestedSite
   ? path.resolve(process.cwd(), requestedSite)
   : null;
-const contentDirectory = siteRoot && path.join(siteRoot, "content");
-const diagramsDirectory = siteRoot && path.join(siteRoot, "diagrams");
+let contentDirectory = siteRoot && path.join(siteRoot, "content");
+let diagramsDirectory = siteRoot && path.join(siteRoot, "diagrams");
 let outputDirectory;
 
 async function readJson(file) {
@@ -128,7 +128,7 @@ function starterConfig(title, logoFileName = "logo.svg") {
         siteDescription: "Static documentation for people and agents.",
         language: "en",
         outputDirectory: "dist",
-        framework: { name: "Aurelius", version: "0.4.6" },
+        framework: { name: "Aurelius", version: "0.6.0" },
         brand: {
           title: "Documentation",
           kicker: "knowledge base",
@@ -1434,7 +1434,7 @@ function contentHref(href, document) {
     /^(?:https?:|mailto:|tel:)/i.test(value) ||
     value.startsWith("#") ||
     value.startsWith("/") ||
-    /^(?:\.\.?\/)?[a-z0-9_@][^:\s]*$/i.test(value)
+    /^(?:\.\.?\/)*[a-z0-9_@][^:\s]*$/i.test(value)
   ) {
     return value;
   }
@@ -1999,7 +1999,25 @@ function renderAgentCards(fromDocument, config) {
   ].join("");
 }
 
-function renderNavigation(currentDocument, documents, config, logoDataUrl) {
+function renderVersionSwitcher(currentDocument, versionNavigation) {
+  if (!versionNavigation?.versions?.length) return "";
+  const currentOutput = path.posix.join(
+    versionNavigation.current.path || ".",
+    documentOutputPath(currentDocument),
+  );
+  const options = versionNavigation.versions.map((version) => {
+    const targetOutput = path.posix.join(version.path || ".", "index.html");
+    const current = version.id === versionNavigation.current.id;
+    return '<a href="' + escapeAttribute(relativeOutputHref(currentOutput, targetOutput)) + '"' +
+      (current ? ' aria-current="page"' : "") + ">" + escapeHtml(version.label) + "</a>";
+  }).join("");
+  const currentLabel = escapeHtml(versionNavigation.current.label);
+  return '<details class="version-switcher"><summary><span>' +
+    (versionNavigation.language?.startsWith("pt") ? "Versão" : "Version") +
+    '</span><strong>' + currentLabel + '</strong></summary><div class="version-options">' + options + "</div></details>";
+}
+
+function renderNavigation(currentDocument, documents, config, logoDataUrl, versionNavigation) {
   const copy = messages(config);
   const byId = new Map(documents.map((document) => [document.id, document]));
   const repositoryUrl = config.repository?.url || "";
@@ -2045,7 +2063,7 @@ function renderNavigation(currentDocument, documents, config, logoDataUrl) {
       escapeHtml(config.brand.kicker || config.framework?.name || "aurelius") +
       "</span></a>",
     '<nav class="nav" aria-label="' + escapeAttribute(copy.primaryNavigation) + '">' + links + "</nav>",
-    '<div class="masthead-tools">', visibleRepositoryLink,
+    '<div class="masthead-tools">', renderVersionSwitcher(currentDocument, versionNavigation), visibleRepositoryLink,
     '<div class="search"><label class="sr-only" for="site-search">' + escapeHtml(copy.search) + '</label><input id="site-search" data-search-input type="search" autocomplete="off" placeholder="' + escapeAttribute(copy.searchPlaceholder) + '" aria-controls="site-search-results" aria-expanded="false"><kbd>⌘ K</kbd><div id="site-search-results" class="search-results" data-search-results role="listbox"></div></div>',
     "</div>",
     "</header>",
@@ -2184,7 +2202,7 @@ function renderHtmlDocument(document, documents, config, context) {
     "<body>",
     '<div class="reading-progress" data-reading-progress aria-hidden="true"></div>',
     '<div class="shell">',
-    renderNavigation(document, documents, config, context.logoDataUrl),
+    renderNavigation(document, documents, config, context.logoDataUrl, context.versionNavigation),
     article,
     '<footer class="footer"><span>' +
       escapeHtml(config.footer?.left || copy.staticDocumentation) +
@@ -2364,7 +2382,16 @@ async function assertSafeOutputDirectory(runtimeDirectory) {
   }
 }
 
-async function build({ checkOnly = process.argv.includes("--check") } = {}) {
+async function build({
+  siteRoot: siteRootOverride,
+  checkOnly = process.argv.includes("--check"),
+  versionNavigation = null,
+} = {}) {
+  if (siteRootOverride) {
+    siteRoot = path.resolve(siteRootOverride);
+    contentDirectory = path.join(siteRoot, "content");
+    diagramsDirectory = path.join(siteRoot, "diagrams");
+  }
   if (!siteRoot) {
     throw new Error(
       "Informe o site a gerar: aurelius build --site caminho/para/o-site",
@@ -2436,6 +2463,7 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
     colors: config.colors,
     config,
     logoDataUrl,
+    versionNavigation,
     mermaidJs: editorialMermaidJs + "\n" + mermaidJs,
   };
 
@@ -2583,7 +2611,9 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
           humanOverview: "llms.txt",
           fullCorpus: "llms-full.txt",
           markdown: "markdown/{id}.md",
+          ...(versionNavigation ? { versions: "api/versions.json" } : {}),
         },
+        ...(versionNavigation ? { versioning: { current: versionNavigation.current.id, catalog: "api/versions.json" } } : {}),
         schemas: {
           document: "api/schema/document.schema.json",
           diagram: "api/schema/diagram.schema.json",
@@ -2594,6 +2624,28 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
       2,
     ) + "\n",
   );
+  if (versionNavigation) {
+    const catalogPath = path.posix.join(
+      versionNavigation.current.path || ".",
+      "api/versions.json",
+    );
+    await writeOutput(
+      path.posix.join("api", "versions.json"),
+      JSON.stringify({
+        apiVersion: 1,
+        current: versionNavigation.current.id,
+        versions: versionNavigation.versions.map((version) => ({
+          id: version.id,
+          label: version.label,
+          current: version.id === versionNavigation.current.id,
+          href: relativeOutputHref(
+            catalogPath,
+            path.posix.join(version.path || ".", "index.html"),
+          ),
+        })),
+      }, null, 2) + "\n",
+    );
+  }
   await writeOutput(
     path.posix.join("api", "graph.json"),
     JSON.stringify(graph, null, 2) + "\n",
@@ -2651,14 +2703,14 @@ async function build({ checkOnly = process.argv.includes("--check") } = {}) {
   );
 }
 
-export { build as buildDocumentation };
+export { build as buildSiteDocumentation, build as buildDocumentation };
 
 const invokedDirectly =
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (invokedDirectly) {
-  build().catch((error) => {
+  buildSiteDocumentation().catch((error) => {
     console.error("Falha no build da documentação:\n" + error.stack);
     process.exitCode = 1;
   });

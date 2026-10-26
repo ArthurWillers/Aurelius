@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { buildDocumentation } from "./build.mjs";
+import { buildDocumentation, loadVersionedSite } from "./versioning.mjs";
 import { normalizedConfig } from "./config.mjs";
 
 const optionValue = (name) => {
@@ -58,7 +58,8 @@ export async function developDocumentation() {
     throw new Error("--port precisa estar entre 1 e 65535.");
   }
 
-  await buildDocumentation();
+  const versionedSite = await loadVersionedSite(siteRoot);
+  await buildDocumentation({ site: siteRoot });
 
   const clients = new Set();
   const server = createServer(async (request, response) => {
@@ -115,7 +116,7 @@ export async function developDocumentation() {
       if (rebuilding) return;
       rebuilding = true;
       try {
-        await buildDocumentation();
+        await buildDocumentation({ site: siteRoot });
         ({ config, outputDirectory } = await configuredOutputDirectory(siteRoot));
         publishReload();
         console.log("Documentação atualizada.");
@@ -127,14 +128,20 @@ export async function developDocumentation() {
     }, 120);
   };
 
-  const paths = [
-    path.join(siteRoot, "site.config.json"),
-    path.join(siteRoot, "content"),
-    path.join(siteRoot, "diagrams"),
-    path.join(siteRoot, "assets"),
-  ];
-  if (config.framework?.runtime) {
-    paths.push(path.resolve(siteRoot, config.framework.runtime));
+  const sourceRoots = versionedSite.versions.length
+    ? versionedSite.versions
+    : [{ siteRoot, siteConfig: config }];
+  const paths = [path.join(siteRoot, "site.config.json")];
+  for (const version of sourceRoots) {
+    paths.push(
+      path.join(version.siteRoot, "site.config.json"),
+      path.join(version.siteRoot, "content"),
+      path.join(version.siteRoot, "diagrams"),
+      path.join(version.siteRoot, "assets"),
+    );
+    if (version.siteConfig.framework?.runtime) {
+      paths.push(path.resolve(version.siteRoot, version.siteConfig.framework.runtime));
+    }
   }
   const watchers = [];
   for (const watchPath of paths) {
